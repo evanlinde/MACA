@@ -1,7 +1,7 @@
 #!/bin/bash
 #
-# Convert the Jupyter notebook (master document) into markdown (for
-# web display) and print-friendly PDFs.
+# Convert the Jupyter notebook (master document) into HTML for
+# web display and print-friendly PDFs.
 # 
 
 title="\"Converting MACA Data for Envision and SWAT Models\""
@@ -35,7 +35,18 @@ date: ${today}
 EOF
 
 # Then add the body from the exported markdown document
-sed -n '/^\#\ Introduction/,$p' ${file_basename}.md >> doc/${file_basename}.md
+# fixing image references as we go. 
+# The image references in the notebook are all formatted like
+#    ![relative/path/to/image.png](attachment:image.png)
+# so we're replacing what's in the parentheses with what's
+# in the square brackets.
+sed -n '/^\#\ Introduction/,${s/^\!\[\(.*\)\](attachment:.*)\ *$/\!\[\1\]\(\1\)/;p}' ${file_basename}.md >> doc/${file_basename}.md
+
+# Get rid of the directly exported markdown since we're done with it
+rm ${file_basename}.md
+
+# Make HTML page
+pandoc -f markdown_github+tex_math_dollars+yaml_metadata_block doc/${file_basename}.md --css doc/pandoc.css --toc -s --mathml -o ${file_basename}.html
 
 # Make a PDF with default margins
 pandoc -f markdown_github+tex_math_dollars+yaml_metadata_block --toc --listings -H doc/listings-setup.tex doc/${file_basename}.md -o doc/${file_basename}.pdf

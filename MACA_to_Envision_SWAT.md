@@ -1,9 +1,8 @@
----
-title: "Converting MACA Data for Envision and SWAT Models"
-author: "Evan Linde"
-institution: "Oklahoma State University"
-date: "October 19, 2017"
----
+
+Converting MACA Data for Envision and SWAT Models
+============================
+
+Evan Linde, Oklahoma State University, October 2017
 
 
 # Introduction

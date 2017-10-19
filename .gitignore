@@ -1,3 +1,4 @@
 *.nc
 MACAv2_Derived/*_SWAT/*/*.txt
 METDATA_Derived/*_SWAT/*.txt
+.ipynb_checkpoints/*

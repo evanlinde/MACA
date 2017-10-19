@@ -1,9 +1,7 @@
 #!/bin/bash
-
-# This script is intended to be called from outside the doc directory
-# i.e. where the notebook file lives. For example:
 #
-#    bash doc/makepdf.sh
+# Convert the Jupyter notebook (master document) into markdown (for
+# web display) and print-friendly PDFs.
 # 
 
 title="\"Converting MACA Data for Envision and SWAT Models\""
@@ -15,6 +13,13 @@ file_basename="MACA_to_Envision_SWAT"
 # Convert the notebook to markdown
 # The markdown file will be ${file_basename}.md
 jupyter nbconvert --to markdown ${file_basename}.ipynb
+
+# Fix image references in the markdown file. 
+# The image references in the notebook are all formatted like
+#    ![relative/path/to/image.png](attachment:image.png)
+# so we're replacing what's in the parentheses with what's
+# in the square brackets.
+sed -i 's/^\!\[\(.*\)\](attachment:.*)\ *$/\!\[\1\]\(\1\)/' ${file_basename}.md
 
 # Build the markdown file we'll feed to pandoc to make the PDF
 # Start with the header
@@ -29,15 +34,8 @@ date: ${today}
 
 EOF
 
-# Then add the body from the exported markdown document while
-# fixing image references as they're encountered.
-# The image references in the notebook are all formatted like
-#    ![/full/path/to/image.png](attachment:image.png)
-# so we're replacing what's in the parentheses with what's
-# in the square brackets.
-sed -n '/^\#\ Introduction/,${s/^\!\[\(.*\)\](attachment:.*)\ *$/\!\[\1\]\(\1\)/;p}' ${file_basename}.md >> doc/${file_basename}.md
-
-rm ${file_basename}.md
+# Then add the body from the exported markdown document
+sed -n '/^\#\ Introduction/,$p' ${file_basename}.md >> doc/${file_basename}.md
 
 # Make a PDF with default margins
 pandoc -f markdown_github+tex_math_dollars+yaml_metadata_block --toc --listings -H doc/listings-setup.tex doc/${file_basename}.md -o doc/${file_basename}.pdf

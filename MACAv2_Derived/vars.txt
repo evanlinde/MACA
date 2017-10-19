@@ -1,0 +1,7 @@
+rhsmean relative_humidity
+rsds surface_downwelling_shortwave_flux_in_air
+tasmax air_temperature
+tasmin air_temperature
+tasmean air_temperature
+pr precipitation
+wind wind_speed

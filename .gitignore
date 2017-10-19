@@ -1,2 +1,2 @@
 *.nc
-
+*_Derived/*_SWAT/*/*.txt

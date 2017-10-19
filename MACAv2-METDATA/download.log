@@ -1,0 +1,82 @@
+Begin: Mon Sep 25 15:58:35 CDT 2017
+Start downloading model bcc-csm1-1-m Mon Sep 25 15:58:35 CDT 2017
+/data/public/datasets/MACAv2-METDATA/bcc-csm1-1-m /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model bcc-csm1-1-m Mon Sep 25 19:56:16 CDT 2017
+Start downloading model bcc-csm1-1 Mon Sep 25 19:56:16 CDT 2017
+/data/public/datasets/MACAv2-METDATA/bcc-csm1-1 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model bcc-csm1-1 Mon Sep 25 23:59:59 CDT 2017
+Start downloading model BNU-ESM Mon Sep 25 23:59:59 CDT 2017
+/data/public/datasets/MACAv2-METDATA/BNU-ESM /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model BNU-ESM Tue Sep 26 02:07:41 CDT 2017
+Start downloading model CanESM2 Tue Sep 26 02:07:41 CDT 2017
+/data/public/datasets/MACAv2-METDATA/CanESM2 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model CanESM2 Tue Sep 26 04:05:54 CDT 2017
+Start downloading model CCSM4 Tue Sep 26 04:05:54 CDT 2017
+/data/public/datasets/MACAv2-METDATA/CCSM4 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model CCSM4 Tue Sep 26 04:06:25 CDT 2017
+Start downloading model CNRM-CM5 Tue Sep 26 04:06:25 CDT 2017
+/data/public/datasets/MACAv2-METDATA/CNRM-CM5 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model CNRM-CM5 Tue Sep 26 07:14:15 CDT 2017
+Start downloading model CSIRO-Mk3-6-0 Tue Sep 26 07:14:15 CDT 2017
+/data/public/datasets/MACAv2-METDATA/CSIRO-Mk3-6-0 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model CSIRO-Mk3-6-0 Tue Sep 26 10:19:06 CDT 2017
+Start downloading model GFDL-ESM2G Tue Sep 26 10:19:06 CDT 2017
+/data/public/datasets/MACAv2-METDATA/GFDL-ESM2G /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model GFDL-ESM2G Tue Sep 26 13:26:26 CDT 2017
+Start downloading model GFDL-ESM2M Tue Sep 26 13:26:26 CDT 2017
+/data/public/datasets/MACAv2-METDATA/GFDL-ESM2M /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model GFDL-ESM2M Tue Sep 26 16:40:47 CDT 2017
+Start downloading model HadGEM2-CC365 Tue Sep 26 16:40:47 CDT 2017
+/data/public/datasets/MACAv2-METDATA/HadGEM2-CC365 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model HadGEM2-CC365 Tue Sep 26 20:03:29 CDT 2017
+Start downloading model HadGEM2-ES365 Tue Sep 26 20:03:29 CDT 2017
+/data/public/datasets/MACAv2-METDATA/HadGEM2-ES365 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model HadGEM2-ES365 Wed Sep 27 00:01:26 CDT 2017
+Start downloading model inmcm4 Wed Sep 27 00:01:26 CDT 2017
+/data/public/datasets/MACAv2-METDATA/inmcm4 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model inmcm4 Wed Sep 27 03:05:56 CDT 2017
+Start downloading model IPSL-CM5A-LR Wed Sep 27 03:05:56 CDT 2017
+/data/public/datasets/MACAv2-METDATA/IPSL-CM5A-LR /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model IPSL-CM5A-LR Wed Sep 27 06:25:57 CDT 2017
+Start downloading model IPSL-CM5A-MR Wed Sep 27 06:25:57 CDT 2017
+/data/public/datasets/MACAv2-METDATA/IPSL-CM5A-MR /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model IPSL-CM5A-MR Wed Sep 27 08:27:26 CDT 2017
+Start downloading model IPSL-CM5B-LR Wed Sep 27 08:27:26 CDT 2017
+/data/public/datasets/MACAv2-METDATA/IPSL-CM5B-LR /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model IPSL-CM5B-LR Wed Sep 27 10:13:07 CDT 2017
+Start downloading model MIROC-ESM-CHEM Wed Sep 27 10:13:07 CDT 2017
+/data/public/datasets/MACAv2-METDATA/MIROC-ESM-CHEM /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model MIROC-ESM-CHEM Wed Sep 27 12:07:59 CDT 2017
+Start downloading model MIROC-ESM Wed Sep 27 12:07:59 CDT 2017
+/data/public/datasets/MACAv2-METDATA/MIROC-ESM /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model MIROC-ESM Wed Sep 27 14:58:02 CDT 2017
+Start downloading model MIROC5 Wed Sep 27 14:58:02 CDT 2017
+/data/public/datasets/MACAv2-METDATA/MIROC5 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model MIROC5 Wed Sep 27 17:08:06 CDT 2017
+Start downloading model MRI-CHCM3 Wed Sep 27 17:08:06 CDT 2017
+/data/public/datasets/MACAv2-METDATA/MRI-CHCM3 /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model MRI-CHCM3 Wed Sep 27 17:08:36 CDT 2017
+Start downloading model NorESM1-M Wed Sep 27 17:08:36 CDT 2017
+/data/public/datasets/MACAv2-METDATA/NorESM1-M /data/public/datasets/MACAv2-METDATA
+/data/public/datasets/MACAv2-METDATA
+Finish downloading model NorESM1-M Wed Sep 27 18:39:49 CDT 2017
+End: Wed Sep 27 18:39:49 CDT 2017

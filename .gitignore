@@ -1,4 +1,14 @@
+# Ignore various temp/backup/etc types of files
+*.swp
+.ipynb_checkpoints/*
+*/.Rhistory
+*/__pycache__/*
+
+# Don't track input and output data
 *.nc
 MACAv2_Derived/*_SWAT/*/*.txt
+MACAv2_Derived/*_SWAT2/*/*.txt
+MACAv2_Derived/*_Drought_Project/*/*.txt
 METDATA_Derived/*_SWAT/*.txt
-.ipynb_checkpoints/*
+METDATA_Derived/*_SWAT2/*.txt
+METDATA_Derived/*_Drought_Project/*.txt

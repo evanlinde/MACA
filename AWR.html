@@ -1,0 +1,1561 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <meta name="author" content="Evan Linde" />
+  <meta name="date" content="2018-07-26" />
+  <title>Converting MACA Data for Envision and SWAT Models - AWR</title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; }
+code > span.dt { color: #902000; }
+code > span.dv { color: #40a070; }
+code > span.bn { color: #40a070; }
+code > span.fl { color: #40a070; }
+code > span.ch { color: #4070a0; }
+code > span.st { color: #4070a0; }
+code > span.co { color: #60a0b0; font-style: italic; }
+code > span.ot { color: #007020; }
+code > span.al { color: #ff0000; font-weight: bold; }
+code > span.fu { color: #06287e; }
+code > span.er { color: #ff0000; font-weight: bold; }
+  </style>
+  <link rel="stylesheet" href="doc/pandoc.css" type="text/css" />
+  <script src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
+</head>
+<body>
+<div id="header">
+<h1 class="title">Converting MACA Data for Envision and SWAT Models - AWR</h1>
+<h2 class="author">Evan Linde</h2>
+<h3 class="date">July 26, 2018</h3>
+</div>
+<div id="TOC">
+<ul>
+<li><a href="#introduction">Introduction</a><ul>
+<li><a href="#acknowledgement-and-disclaimer">Acknowledgement and Disclaimer</a></li>
+</ul></li>
+<li><a href="#macav2-metdata">MACAv2-METDATA</a><ul>
+<li><a href="#downloading">Downloading</a></li>
+<li><a href="#subsetting">Subsetting</a><ul>
+<li><a href="#find-bounds-for-creating-geographic-subsets">Find bounds (for creating geographic subsets)</a></li>
+<li><a href="#make-file-list-used-for-creating-the-subset-files">Make file list (used for creating the subset files)</a></li>
+<li><a href="#create-subset-files">Create subset files</a></li>
+</ul></li>
+<li><a href="#converting-for-envision-models">Converting for Envision Models</a></li>
+<li><a href="#converting-for-swat-models">Converting for SWAT Models</a><ul>
+<li><a href="#create-relative-humidity-netcdf-files">Create relative humidity netCDF files</a></li>
+<li><a href="#calculate-sub-polygon-means">Calculate sub-polygon means</a></li>
+</ul></li>
+</ul></li>
+<li><a href="#metdata">METDATA</a><ul>
+<li><a href="#downloading-1">Downloading</a></li>
+<li><a href="#subsetting-1">Subsetting</a><ul>
+<li><a href="#finding-coordinates">Finding Coordinates</a></li>
+<li><a href="#create-subset-files-1">Create subset files</a></li>
+</ul></li>
+<li><a href="#converting-for-envision-models-1">Converting for Envision Models</a></li>
+<li><a href="#converting-for-swat-models-1">Converting for SWAT Models</a></li>
+</ul></li>
+<li><a href="#calculating-potential-evapotranspiration">Calculating Potential Evapotranspiration</a></li>
+<li><a href="#awr-data-outputs">AWR Data Outputs</a><ul>
+<li><a href="#modeled-data-from-macav2-metdata">Modeled data from MACAv2-METDATA</a></li>
+<li><a href="#observational-data-from-metdata">Observational data from METDATA</a></li>
+<li><a href="#variables">Variables</a></li>
+<li><a href="#multi-column-swat-format">Multi-column SWAT format</a></li>
+</ul></li>
+</ul>
+</div>
+<h1 id="introduction">Introduction</h1>
+<p>This is a record of the process we followed to make data from the <a href="https://climate.northwestknowledge.net/MACA/MACAproducts.php#MACAproductcomparison">MACAv2-METDATA</a> and <a href="https://climate.northwestknowledge.net/METDATA/">METDATA</a> datasets usable in <a href="http://envision.bioe.orst.edu/">Envision</a> and <a href="http://swat.tamu.edu/">SWAT</a> models. Large portions of this process are virtually identical to the <a href="https://evanlinde.github.io/MACA/MACA_to_Envision_SWAT.html">procedure we used in Fall 2017</a> to convert data for the Cimarron and Kiamichi study areas.</p>
+<p>Unlike what we did last fall (where we only looked at years 2021-2099 from MACAv2-METDATA), we will be using the entire &quot;future&quot; (2006-2099) subset of MACAv2-METDATA.</p>
+<p>Here we will be working on the combined drainage basin for the Arkansas, White, and Red (AWR) rivers (region 11 from the <a href="https://water.usgs.gov/GIS/regions.html">USGS Hydrological Unit Map</a>) subdivided into HUC10 polygons.</p>
+<p>The data we want:</p>
+<ul>
+<li>METDATA (historical/observational) from beginning (1979) through present<br /></li>
+<li>MACAv2-METDATA (&quot;future&quot;/model-predicted, 2006-2099)</li>
+</ul>
+<p>This document may frequently refer to our work from Fall 2017 and will only show modified scripts. Fuller explanation of most steps can be found in the Fall 2017 documentation.</p>
+<h2 id="acknowledgement-and-disclaimer">Acknowledgement and Disclaimer</h2>
+<p>Computation for this project was performed on TIGER, the research &quot;cloud&quot; at the Oklahoma State University <a href="http://hpcc.okstate.edu">High Performance Computing Center</a>.</p>
+<p>This material is based on work supported by the National Science Foundation under Grant No. <a href="https://www.nsf.gov/awardsearch/showAward?AWD_ID=1301789">OIA-1301789</a>. Any opinions, findings, and conclusions or recommendations expressed in this material are those of the author(s) and do not necessarily reflect the views of the National Science Foundation or Oklahoma State Regents for Higher Education.</p>
+<h1 id="macav2-metdata">MACAv2-METDATA</h1>
+<h2 id="downloading">Downloading</h2>
+<p>Create the script <code>download3.sh</code> to download earlier &quot;future&quot; year sets that we didn't use before (i.e. 2006-2020). (This is basically identical to the previous download scripts, but with different values in the <code>YEAR_BLOCKS</code> array.)</p>
+<p><strong><code>download3.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Download the 2006-2020 &quot;future&quot; data from MACAv2-METDATA</span>
+<span class="co">#</span>
+
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CCSM4&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span> 
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span> 
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span> 
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span> <span class="st">&quot;NorESM1-M&quot;</span>)
+<span class="ot">YEAR_BLOCKS=(</span><span class="st">&quot;2006_2010&quot;</span> <span class="st">&quot;2011_2015&quot;</span> <span class="st">&quot;2016_2020&quot;</span><span class="ot">)</span>
+<span class="ot">VARS=(</span><span class="st">&quot;tasmax&quot;</span> <span class="st">&quot;tasmin&quot;</span> <span class="st">&quot;rhsmax&quot;</span> <span class="st">&quot;rhsmin&quot;</span> <span class="st">&quot;huss&quot;</span> <span class="st">&quot;pr&quot;</span> <span class="st">&quot;rsds&quot;</span> <span class="st">&quot;uas&quot;</span> <span class="st">&quot;vas&quot;</span><span class="ot">)</span>
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="ot">base_url=</span><span class="st">&quot;https://climate.northwestknowledge.net/MACAV2METDATA/MACAV2&quot;</span>
+
+<span class="kw">echo</span> <span class="st">&quot;Begin: </span><span class="ot">$(</span><span class="kw">date</span><span class="ot">)</span><span class="st">&quot;</span>
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">mkdir</span> -p <span class="st">&quot;</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="kw">pushd</span> <span class="st">&quot;</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="kw">for</span> <span class="kw">wvar</span> in <span class="ot">${VARS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="kw">for</span> <span class="kw">block</span> in <span class="ot">${YEAR_BLOCKS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+            <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+                <span class="kw">if [[</span> <span class="st">&quot;</span><span class="ot">${model}</span><span class="st">&quot;</span> <span class="ot">==</span> <span class="st">&quot;CCSM4&quot;</span><span class="kw"> ]]</span>; <span class="kw">then</span>
+                    <span class="ot">filename=</span><span class="st">&quot;macav2metdata_</span><span class="ot">${wvar}</span><span class="st">_</span><span class="ot">${model}</span><span class="st">_r6i1p1_</span><span class="ot">${rcp}</span><span class="st">_</span><span class="ot">${block}</span><span class="st">_CONUS_daily.nc&quot;</span>
+                <span class="kw">else</span>
+                    <span class="ot">filename=</span><span class="st">&quot;macav2metdata_</span><span class="ot">${wvar}</span><span class="st">_</span><span class="ot">${model}</span><span class="st">_r1i1p1_</span><span class="ot">${rcp}</span><span class="st">_</span><span class="ot">${block}</span><span class="st">_CONUS_daily.nc&quot;</span>
+                <span class="kw">fi</span>
+                <span class="ot">url=</span><span class="st">&quot;</span><span class="ot">${base_url}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">/</span><span class="ot">${filename}</span><span class="st">&quot;</span>
+                <span class="kw">wget</span> <span class="ot">${url}</span> <span class="kw">&amp;</span>
+            <span class="kw">done</span>
+            <span class="kw">wait</span>
+        <span class="kw">done</span>
+    <span class="kw">done</span>
+    <span class="kw">popd</span>
+<span class="kw">done</span>
+<span class="kw">echo</span> <span class="st">&quot;End: </span><span class="ot">$(</span><span class="kw">date</span><span class="ot">)</span><span class="st">&quot;</span></code></pre>
+<p>Run the <code>download3.sh</code> script. This step saw done on TIGER's data transfer node to take advantage of the fast network connection.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2-METDATA
+<span class="kw">bash</span> download3.sh</code></pre>
+<p>From the output, we see that this took about 5 hours:</p>
+<pre><code>Begin: Sun Jun 24 21:52:32 CDT 2018
+End: Mon Jun 25 02:55:17 CDT 2018</code></pre>
+<h2 id="subsetting">Subsetting</h2>
+<h3 id="find-bounds-for-creating-geographic-subsets">Find bounds (for creating geographic subsets)</h3>
+<p>Find the extents of the shapefile in ArcGIS or QGIS and use this to figure out the parameters for the subsetting commands.</p>
+<pre><code>Lat: 
+    31.208320 to 39.383345                     # Latitude extents from shapefile
+    --&gt; 31.1879806518555 to 39.396183013916    # Raster cell coordinates nearest to bounds
+    --&gt; 31.186 to 39.397                       # Truncate to three decimal places and round
+                                               # to make sure we get the end cells
+Lon: 
+    -106.599758 to -90.143003                  # Longitude extents from shapefile
+    = 253.400242 to 269.856997                 # Convert to positive degrees East
+    --&gt; 253.39421081543 to 269.852294921875    # Raster cell coordinates nearest to bounds
+    --&gt; 253.393 to 269.853                     # Truncate to three decimal places and round
+                                               # to make sure we get the end cells</code></pre>
+<p>Generic form for subset commands:</p>
+<pre><code>ncks -3 -d lat,31.186,39.397 -d lon,253.393,269.853 infile.nc outfile.nc</code></pre>
+<p>We create a test subset file and view it in QGIS to verify that it covers the AWR area.</p>
+<p><img src="MACAv2_Derived/AWR.png" alt="MACAv2_Derived/AWR.png" /></p>
+<h3 id="make-file-list-used-for-creating-the-subset-files">Make file list (used for creating the subset files)</h3>
+<p>Find the files that have the years 2006 or 2016 in their names, then find the files that have the year 2011. Remove the leading &quot;./&quot; from the file paths.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2-METDATA
+<span class="kw">find</span> ./ -name <span class="st">&#39;*20[01]6_*.nc&#39;</span> <span class="kw">&gt;</span> file_list2.txt
+<span class="kw">find</span> ./ -name <span class="st">&#39;*2011_*.nc&#39;</span> <span class="kw">&gt;&gt;</span> file_list2.txt
+<span class="kw">sed</span> -i <span class="st">&#39;s:^\./::g&#39;</span> file_list2.txt</code></pre>
+<h3 id="create-subset-files">Create subset files</h3>
+<p>Make output directories for each model. Run the subset command for every file in the old file list (years 2021-2099); then run the subset command for every file in the new file list (years 2006-2020).</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2-METDATA
+<span class="kw">mkdir</span> -p ../MACAv2_Derived/AWR/<span class="dt">{bcc-csm1-1-m,bcc-csm1-1,BNU-ESM,CanESM2,CCSM4,CNRM-CM5,CSIRO-Mk3-6-0,GFDL-ESM2G,GFDL-ESM2M,HadGEM2-CC365,HadGEM2-ES365,inmcm4,IPSL-CM5A-LR,IPSL-CM5A-MR,IPSL-CM5B-LR,MIROC-ESM-CHEM,MIROC-ESM,MIROC5,MRI-CGCM3,NorESM1-M}</span>
+<span class="kw">time</span> for f in <span class="ot">$(</span><span class="kw">cat</span> file_list.txt<span class="ot">)</span><span class="kw">;</span> <span class="kw">do</span> <span class="kw">ncks</span> -3 -d lat,31.186,39.397 -d lon,253.393,269.853 <span class="ot">${f}</span> ../MACAv2_Derived/AWR/<span class="ot">${f/</span>CONUS<span class="ot">/</span>AWR<span class="ot">}</span><span class="kw">;</span> <span class="kw">done</span>
+<span class="kw">time</span> for f in <span class="ot">$(</span><span class="kw">cat</span> file_list2.txt<span class="ot">)</span><span class="kw">;</span> <span class="kw">do</span> <span class="kw">ncks</span> -3 -d lat,31.186,39.397 -d lon,253.393,269.853 <span class="ot">${f}</span> ../MACAv2_Derived/AWR/<span class="ot">${f/</span>CONUS<span class="ot">/</span>AWR<span class="ot">}</span><span class="kw">;</span> <span class="kw">done</span></code></pre>
+<p>The first round (for the files we already had from last fall) took ~3634 minutes (about 2.5 days).</p>
+<p>The seconds round (&quot;future&quot; files for 2006-2020) took 1327 minutes (just over 22 hours).</p>
+<h2 id="converting-for-envision-models">Converting for Envision Models</h2>
+<p>Use the same script from last fall to convert the 2021-2099 subset files for Envision.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2_Derived
+<span class="kw">time</span> bash maca_subset_to_envision.sh AWR</code></pre>
+<p>This took 9518 minutes (about 6.6 days).</p>
+<p>Create new script <code>maca_subset_to_envision2.sh</code> by copying <code>maca_subset_to_envision.sh</code> and setting <code>YEAR_BLOCKS=(&quot;2006_2010&quot; &quot;2011_2015&quot; &quot;2016_2020&quot;)</code>.</p>
+<p><strong><code>maca_subset_to_envision2.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Convert watershed-specific subsets from MACAv2-METDATA into a format usable</span>
+<span class="co"># in Envision. Envision-compatible netCDF files need to be in netCDF 3</span>
+<span class="co"># (classic) format and require the valid range for longitude in degrees east</span>
+<span class="co"># to be [ -180 &lt;= x &lt;= 180 ] rather than [ 0 &lt;= x &lt;= 360 ].</span>
+<span class="co">#</span>
+<span class="co"># Additionally we will need to change some units and derive new variables.</span>
+<span class="co">#</span>
+<span class="co"># Convert temperature units from Kelvins to degrees Celsius.</span>
+<span class="co">#</span>
+<span class="co"># Calculate mean daily temperatures as:</span>
+<span class="co">#     tasmean = mean(tasmax, tasmin)</span>
+<span class="co">#</span>
+<span class="co"># Calculate wind speed as:</span>
+<span class="co">#     speed = sqrt(northward_wind^2 + eastward_wind^2)</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command line</span>
+<span class="co"># argument and expects the watershed name to appear in the subset files</span>
+<span class="co"># which it will convert for Envision.</span>
+<span class="co">#</span>
+<span class="co"># </span>
+<span class="co"># Evan Linde, Oklahoma State University, 2017-10-05</span>
+<span class="co">#</span>
+<span class="co"># Updated to only process years 2006-2020, 2018-06-27</span>
+<span class="co">#</span>
+
+
+<span class="kw">if [</span> <span class="st">&quot;</span><span class="ot">$#</span><span class="st">&quot;</span> <span class="ot">-ne</span> 1<span class="kw"> ]</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="st">&quot;This script requires the watershed directory name to be&quot;</span>
+    <span class="kw">echo</span> <span class="st">&quot;included as a command line argument.&quot;</span>
+    <span class="kw">exit</span> 1<span class="kw">;</span>
+<span class="kw">fi</span>
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span> 
+
+<span class="co"># Parent directories</span>
+<span class="ot">sourcepdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">&quot;</span>
+<span class="ot">destpdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+
+
+<span class="co"># Declare arrays for the variables we&#39;ll need to loop over</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CCSM4&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span> 
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span> 
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span> 
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span> <span class="st">&quot;NorESM1-M&quot;</span>)
+<span class="ot">YEAR_BLOCKS=(</span><span class="st">&quot;2006_2010&quot;</span> <span class="st">&quot;2011_2015&quot;</span> <span class="st">&quot;2016_2020&quot;</span><span class="ot">)</span> 
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+<span class="co"># skipping &quot;rhsmax&quot; and &quot;rhsmin&quot;</span>
+<span class="co"># We&#39;re not actually usin the VARS array in this script</span>
+<span class="ot">VARS=(</span><span class="st">&quot;tasmax&quot;</span> <span class="st">&quot;tasmin&quot;</span> <span class="st">&quot;huss&quot;</span> <span class="st">&quot;pr&quot;</span> <span class="st">&quot;rsds&quot;</span> <span class="st">&quot;uas&quot;</span> <span class="st">&quot;vas&quot;</span><span class="ot">)</span>  
+<span class="co"># Variables used in Envision netcdf filenames. (We are using this array.)</span>
+<span class="ot">ENVISION_VARS=(</span><span class="st">&quot;huss&quot;</span> <span class="st">&quot;rsds&quot;</span> <span class="st">&quot;pr&quot;</span> <span class="st">&quot;tasmax&quot;</span> <span class="st">&quot;tasmin&quot;</span> <span class="st">&quot;tasmean&quot;</span> <span class="st">&quot;wind&quot;</span><span class="ot">)</span>
+
+
+<span class="co"># Create a temp directory</span>
+<span class="ot">tmpdir=$(</span><span class="kw">mktemp</span> -d<span class="ot">)</span>
+
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+    <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+        <span class="kw">for</span> <span class="kw">block</span> in <span class="ot">${YEAR_BLOCKS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+            <span class="ot">bfirst=${block:0:4}</span>  <span class="co"># first year in year block</span>
+            <span class="ot">blast=${block:5:4}</span>   <span class="co"># last year in year block</span>
+            <span class="ot">sourcedir=</span><span class="st">&quot;</span><span class="ot">${sourcepdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span> <span class="co"># subset files for current model</span>
+            <span class="ot">destdir=</span><span class="st">&quot;</span><span class="ot">${destpdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>     <span class="co"># output files for current model</span>
+            <span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>/yearly    <span class="co"># output dir for yearly files</span>
+
+            <span class="co"># Arbitrarily using the huss file as a template for other </span>
+            <span class="co"># filenames. Most models have &quot;r1i1p1&quot; but at least one has </span>
+            <span class="co"># &quot;r6i1p1&quot;, so instead of a condition based on the model name, </span>
+            <span class="co"># we&#39;re detecting the correct string with bash&#39;s glob expressions </span>
+            <span class="co"># (i.e. the &quot;r?i1p1&quot; part). This could be a problem if more than </span>
+            <span class="co"># one file matches the expression.</span>
+            <span class="ot">huss_basename=$(</span><span class="kw">basename</span> <span class="ot">$(</span><span class="kw">echo</span> <span class="ot">${sourcedir}</span>/macav2metdata_huss_<span class="ot">${model}</span>_r?i1p1_<span class="ot">${rcp}</span>_<span class="ot">${block}</span>_<span class="ot">${watershed}</span>_daily.nc<span class="ot">))</span>
+            <span class="co"># Prefix for yearly files; we&#39;ll add &quot;${year}.nc&quot; to the end </span>
+            <span class="co"># when creating yearly files</span>
+            <span class="ot">huss_y_prefix=</span><span class="st">&quot;</span><span class="ot">${huss_basename/</span>_<span class="ot">${block}</span>_<span class="ot">${watershed}</span>_daily.nc<span class="ot">/</span>_<span class="ot">${watershed}</span>_daily<span class="ot">}</span><span class="st">&quot;</span>
+
+            <span class="co"># Set variables for the input and output files using the huss </span>
+            <span class="co"># filename as a template replacing &quot;huss&quot; with the target </span>
+            <span class="co"># variable name</span>
+            <span class="ot">subset_huss=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename}</span><span class="st">&quot;</span>
+            <span class="ot">envision_huss=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename}</span><span class="st">&quot;</span>
+            <span class="ot">subset_rsds=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>rsds<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_rsds=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>rsds<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">subset_pr=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>pr<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_pr=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>pr<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">subset_tasmax=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>tasmax<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_tasmax=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>tasmax<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">subset_tasmin=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>tasmin<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_tasmin=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>tasmin<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_tasmean=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>tasmean<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">subset_vas=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>vas<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">subset_uas=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>uas<span class="ot">}</span><span class="st">&quot;</span>
+            <span class="ot">envision_wind=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/</span>wind<span class="ot">}</span><span class="st">&quot;</span>
+
+            <span class="co"># Do all the conversions</span>
+            <span class="co">#    subset huss --&gt; envision huss</span>
+            <span class="co">#    subset rsds --&gt; envision rsds</span>
+            <span class="co">#    subset pr --&gt; envision pr</span>
+            <span class="co">#    subset tasmax --&gt; envision tasmax</span>
+            <span class="co">#    subset tasmin --&gt; envision tasmin</span>
+            <span class="co">#    envision tasmax and tasmin --&gt; envision tasmean</span>
+            <span class="co">#    subset vas and uas --&gt; envision wind</span>
+            <span class="co">#</span>
+            <span class="co"># We&#39;re not looping here since we&#39;re not doing the</span>
+            <span class="co"># same thing for all the variables.</span>
+
+            <span class="co"># huss (specific_humidity)</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360&#39;</span> <span class="ot">${subset_huss}</span> <span class="ot">${envision_huss}</span>
+
+            <span class="co"># rsds (surface_downwelling_shortwave_flux_in_air)</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360&#39;</span> <span class="ot">${subset_rsds}</span> <span class="ot">${envision_rsds}</span>
+
+            <span class="co"># pr (precipitation)</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360&#39;</span> <span class="ot">${subset_pr}</span> <span class="ot">${envision_pr}</span>
+
+            <span class="co"># tasmax (air_temperature)</span>
+            <span class="co"># In addition to longitude, we&#39;re also converting temperature</span>
+            <span class="co"># from K to C, and then we&#39;re updating the metadata to reflect</span>
+            <span class="co"># this with the ncatted command.</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360; air_temperature=(air_temperature - 273.15)&#39;</span> <span class="ot">${subset_tasmax}</span> <span class="ot">${envision_tasmax}</span>
+            <span class="kw">ncatted</span> -a units,air_temperature,o,char,<span class="st">&#39;C&#39;</span> <span class="ot">${envision_tasmax}</span>
+
+            <span class="co"># tasmin (air_temperature)</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360; air_temperature=(air_temperature - 273.15)&#39;</span> <span class="ot">${subset_tasmin}</span> <span class="ot">${envision_tasmin}</span>
+            <span class="kw">ncatted</span> -a units,air_temperature,o,char,<span class="st">&#39;C&#39;</span> <span class="ot">${envision_tasmin}</span>
+
+            <span class="co"># Calculated variable: tasmean (air_temperature)</span>
+            <span class="kw">nces</span> -3 <span class="ot">${envision_tasmax}</span> <span class="ot">${envision_tasmin}</span> <span class="ot">${envision_tasmean}</span>
+            <span class="kw">ncatted</span> -a cell_methods,air_temperature,o,c,<span class="st">&#39;time: mean(interval: 24 hours)&#39;</span> -a long_name,air_temperature,o,c,<span class="st">&#39;Daily Mean Near-Surface Air Temperature&#39;</span> <span class="ot">${envision_tasmean}</span>
+
+            <span class="co"># Calculated variable: wind (wind_speed)</span>
+            <span class="co"># Make a temporary copy of the vas file. (It will be modified.)</span>
+            <span class="kw">cp</span> <span class="ot">${subset_vas}</span> <span class="ot">${tmpdir}</span>/vas.nc
+            <span class="co"># Append the uas variable (eastward_wind) into the vas file</span>
+            <span class="kw">ncks</span> -A <span class="ot">${subset_uas}</span> <span class="ot">${tmpdir}</span>/vas.nc
+            <span class="co"># Calculate wind speed. The output file from this command will have</span>
+            <span class="co"># three variables: northward_wind, eastward_wind, and wind_speed.</span>
+            <span class="kw">ncap2</span> -s <span class="st">&#39;lon=lon-360; wind_speed=sqrt(northward_wind^2 + eastward_wind^2)&#39;</span> <span class="ot">${tmpdir}</span>/vas.nc <span class="ot">${tmpdir}</span>/wind.nc
+            <span class="co"># Extract the wind_speed variable into its own file</span>
+            <span class="kw">ncks</span> -3 -v wind_speed <span class="ot">${tmpdir}</span>/wind.nc <span class="ot">${envision_wind}</span>
+            <span class="co"># Get rid of temporary files</span>
+            <span class="kw">rm</span> <span class="ot">${tmpdir}</span>/vas.nc <span class="ot">${tmpdir}</span>/wind.nc
+            <span class="co"># Update metadata. (The wind_speed variable inherited the</span>
+            <span class="co"># metadata from the vas variable, northward_wind.)</span>
+            <span class="kw">ncatted</span> -a comments,wind_speed,o,c,<span class="st">&#39;Surface (10m) wind speed&#39;</span> -a long_name,wind_speed,o,c,<span class="st">&#39;Wind Speed&#39;</span> -a standard_name,wind_speed,o,c,<span class="st">&#39;wind_speed&#39;</span> <span class="ot">${envision_wind}</span>
+
+            <span class="co"># Split all the envision files into yearly files</span>
+            <span class="co"># Doing a C-style for loop here because &quot;{${bfirst}..${blast}}&quot;</span>
+            <span class="co"># doesn&#39;t work like it would with literals.</span>
+            <span class="kw">for</span> <span class="kw">((</span>y=<span class="ot">${bfirst}</span>; y&lt;=<span class="ot">${blast}</span>; y++<span class="kw">))</span>; <span class="kw">do</span>
+
+                <span class="co"># We can conveniently loop over the variables here since </span>
+                <span class="co"># we&#39;re doing the same thing for all of them.</span>
+                <span class="kw">for</span> <span class="kw">ev</span> in <span class="ot">${ENVISION_VARS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+                    <span class="ot">infile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${huss_basename/</span>huss<span class="ot">/${ev}}</span><span class="st">&quot;</span>
+                    <span class="ot">outfile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/yearly/</span><span class="ot">${huss_y_prefix/</span>huss<span class="ot">/${ev}}</span><span class="st">_</span><span class="ot">${y}</span><span class="st">.nc&quot;</span>
+                    <span class="co"># Year Bounds</span>
+                    <span class="co"># Get the first and last day of the given year in the form</span>
+                    <span class="co"># of &quot;first,last&quot; where first and last are floating point</span>
+                    <span class="co"># numbers representing &quot;days since 1900-01-01&quot;.</span>
+                    <span class="ot">yb=$(</span><span class="kw">bash</span> yearbounds.sh <span class="ot">${y})</span>
+
+                    <span class="kw">ncks</span> -d time,<span class="ot">${yb}</span> <span class="ot">${infile}</span> <span class="ot">${outfile}</span>
+
+                <span class="kw">done</span>  <span class="co"># end of envision vars loop</span>
+
+            <span class="kw">done</span>  <span class="co"># end of years inside year block loop</span>
+
+        <span class="kw">done</span>  <span class="co"># end of year blocks loop</span>
+
+    <span class="kw">done</span>  <span class="co"># end of rcps loop</span>
+
+<span class="kw">done</span>  <span class="co"># end of models loop</span>
+
+<span class="co"># Cleanup: remove the temp directory we created at the beginning</span>
+<span class="kw">rm</span> -rf <span class="ot">${tmpdir}</span></code></pre>
+<p>Run the new script to convert the 2006-2020 subset files for Envision.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2_Derived
+<span class="kw">time</span> bash maca_subset_to_envision2.sh AWR</code></pre>
+<p>This took 2565 minutes (42.75 hours, or a little less than two days).</p>
+<h2 id="converting-for-swat-models">Converting for SWAT Models</h2>
+<h3 id="create-relative-humidity-netcdf-files">Create relative humidity netCDF files</h3>
+<p>Copy <code>relative_humidity.sh</code> to <code>relative_humidity2.sh</code> and modify the new script to include years 2006-2020 (in addition to 2021-2099).</p>
+<p><strong><code>relative_humidity2.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Create files for mean daily relative humidity (in the ${watershed_Envision</span>
+<span class="co"># directory). This isn&#39;t for Envision itself, but to make data conversion</span>
+<span class="co"># for SWAT easier.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command line</span>
+<span class="co"># argument.</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2017-10-11</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Modified to include years 2006-2020 for the AWR study area, 2018-06-29</span>
+<span class="co">#</span>
+<span class="co">#</span>
+
+
+<span class="kw">if [</span> <span class="st">&quot;</span><span class="ot">$#</span><span class="st">&quot;</span> <span class="ot">-ne</span> 1<span class="kw"> ]</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="st">&quot;This script requires the watershed directory name to be&quot;</span>
+    <span class="kw">echo</span> <span class="st">&quot;included as a command line argument.&quot;</span>
+    <span class="kw">exit</span> 1<span class="kw">;</span>
+<span class="kw">fi</span>
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span> 
+
+<span class="co"># Parent directories</span>
+<span class="ot">sourcepdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">&quot;</span>
+<span class="ot">destpdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+
+
+<span class="co"># Declare arrays for the variables we&#39;ll need to loop over</span>
+
+<span class="co"># Excluding CCSM4 and NorESM1-M since these don&#39;t have rhsmin and rhsmax</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span> 
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span> 
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span> 
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">YEAR_BLOCKS=(</span><span class="st">&quot;2006_2010&quot;</span> <span class="st">&quot;2011_2015&quot;</span> <span class="st">&quot;2016_2020&quot;</span> <span class="st">&quot;2021_2025&quot;</span> <span class="st">&quot;2026_2030&quot;</span>
+    <span class="st">&quot;2031_2035&quot;</span> <span class="st">&quot;2036_2040&quot;</span> <span class="st">&quot;2041_2045&quot;</span> <span class="st">&quot;2046_2050&quot;</span> <span class="st">&quot;2051_2055&quot;</span> 
+    <span class="st">&quot;2056_2060&quot;</span> <span class="st">&quot;2061_2065&quot;</span> <span class="st">&quot;2066_2070&quot;</span> <span class="st">&quot;2071_2075&quot;</span> <span class="st">&quot;2076_2080&quot;</span> 
+    <span class="st">&quot;2081_2085&quot;</span> <span class="st">&quot;2086_2090&quot;</span> <span class="st">&quot;2091_2095&quot;</span> <span class="st">&quot;2096_2099&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+
+<span class="co"># Create a temp directory</span>
+<span class="ot">tmpdir=$(</span><span class="kw">mktemp</span> -d<span class="ot">)</span>
+
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+    <span class="ot">sourcedir=</span><span class="st">&quot;</span><span class="ot">${sourcepdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>  <span class="co"># subset files for current model</span>
+    <span class="ot">destdir=</span><span class="st">&quot;</span><span class="ot">${destpdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>      <span class="co"># output files for current model</span>
+
+    <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+        <span class="kw">for</span> <span class="kw">block</span> in <span class="ot">${YEAR_BLOCKS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+
+            <span class="ot">subset_rhsmax=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/macav2metdata_rhsmax_</span><span class="ot">${model}</span><span class="st">_r1i1p1_</span><span class="ot">${rcp}</span><span class="st">_</span><span class="ot">${block}</span><span class="st">_</span><span class="ot">${watershed}</span><span class="st">_daily.nc&quot;</span>
+            <span class="ot">subset_rhsmin=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/macav2metdata_rhsmin_</span><span class="ot">${model}</span><span class="st">_r1i1p1_</span><span class="ot">${rcp}</span><span class="st">_</span><span class="ot">${block}</span><span class="st">_</span><span class="ot">${watershed}</span><span class="st">_daily.nc&quot;</span>
+            <span class="ot">envision_rhsmean=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/macav2metdata_rhsmean_</span><span class="ot">${model}</span><span class="st">_r1i1p1_</span><span class="ot">${rcp}</span><span class="st">_</span><span class="ot">${block}</span><span class="st">_</span><span class="ot">${watershed}</span><span class="st">_daily.nc&quot;</span>
+
+            <span class="co"># Calculate mean relative humidity</span>
+            <span class="kw">nces</span> <span class="ot">${subset_rhsmax}</span> <span class="ot">${subset_rhsmin}</span> <span class="ot">${tmpdir}</span>/rhsmean.nc
+
+            <span class="co"># Fix longitude</span>
+            <span class="kw">ncap2</span> -3 -s <span class="st">&#39;lon=lon-360&#39;</span> <span class="ot">${tmpdir}</span>/rhsmean.nc <span class="ot">${envision_rhsmean}</span>
+
+            <span class="co"># Delete temp file</span>
+            <span class="kw">rm</span> <span class="ot">${tmpdir}</span>/rhsmean.nc
+
+            <span class="co"># Update metadata</span>
+            <span class="kw">ncatted</span> -a long_name,relative_humidity,o,c,<span class="st">&#39;Surface Daily Mean Relative Humidity&#39;</span> -a cell_methods,relative_humidity,o,c,<span class="st">&#39;time: mean(interval: 24 hours)&#39;</span> <span class="ot">${envision_rhsmean}</span> 
+
+        <span class="kw">done</span>  <span class="co"># end of year blocks loop</span>
+
+    <span class="kw">done</span>  <span class="co"># end of rcps loop</span>
+
+<span class="kw">done</span>  <span class="co"># end of models loop</span>
+
+<span class="co"># Cleanup: remove the temp directory we created at the beginning</span>
+<span class="kw">rm</span> -rf <span class="ot">${tmpdir}</span></code></pre>
+<p>Run the new relative humidity script to process the entire time series.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash relative_humidity2.sh AWR</code></pre>
+<p>This took 824 minutes (13.73 hours).</p>
+<h3 id="calculate-sub-polygon-means">Calculate sub-polygon means</h3>
+<p>Here we diverge from the process used in Fall 2017 for the Cimarron study area. In the previous process, we used data from the centroid points of the sub-polygons, but for the AWR study we were tasked to provide the area mean values.</p>
+<p>At first, we looked at <a href="https://pythonhosted.org/rasterstats/rasterstats.html">rasterstats</a> for calculating the area averages for the sub-polygons, but it isn't capable of handling the netCDF files without explicitly doing a for loop over the time steps (where it calculates the masks for the polygons each time).</p>
+<p>The rasterstats library has an option to output the masks it produces for the polygons, but does not appear to have a way to include them in a call to the zonal_stats() function.</p>
+<p>In our tests, each time step took around 3-4 minutes (over HUC8 polygons) with rasterstats, so calculating the polygon means for one model-rcp-variable for the entire future time series (34333 days) would take (at best) a 102999 minutes (about 71.5 days). Tests calculating the area means over HUC10 polygons for one time step took anywhere from 16:44 (1004 seconds; best time; testing against a maximum temperature file) to 23:21 (1401 seconds; worst time; testing against a precipitation file).</p>
+<p>With 18 models, 2 RCPs, and 6 variables being used with SWAT, this means the entire dataset to be used will require (at least) <strong>236 years</strong> to process serially.</p>
+<pre><code>1004 * 34333 * 18 * 2 * 6 = 7445591712 seconds = 86175.83 days =~ 236 years
+(seconds_per_time_step * time_steps * models * rcps * variables)</code></pre>
+<p>We figured that we should be able to do better than this.</p>
+<p>By calculating and saving reusable masks for each of the HUC10 polygons we can avoid repeating one of the costlier operations in calculating zonal mean values. (This works since the raster grid is identical for all the subset and Envision netCDF files.) Further, since we can work with the entire netCDF time series in python using the <a href="http://unidata.github.io/netcdf4-python/"><code>netCDF4</code> library</a> and use <code>numpy</code> vectorized operations to calculate mean values over the time series, we can expect to improve significantly upon what <code>rasterstats</code> can do.</p>
+<p><strong><code>make_huc_masks.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Make a library of raster masks for the HUC10 polygons in the AWR</span>
+<span class="co"># subset files of MACAv2-METDATA.</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-06-26</span>
+<span class="co">#</span>
+
+<span class="ch">import</span> netCDF4 <span class="ch">as</span> nc
+<span class="ch">import</span> numpy <span class="ch">as</span> np
+<span class="ch">from</span> cartopy.io.shapereader <span class="ch">import</span> Reader
+<span class="ch">import</span> shapely.geometry <span class="ch">as</span> sgeom
+
+nc_file = <span class="st">&#39;/data/public/datasets/MACA/AWR-test.nc&#39;</span>
+shp_file = <span class="st">&#39;huc10_bnd/AWR_HUC10.shp&#39;</span>
+
+nc_x = <span class="st">&#39;lon&#39;</span>
+nc_y = <span class="st">&#39;lat&#39;</span>
+nc_var = <span class="st">&#39;air_temperature&#39;</span>
+shp_attr = <span class="st">&#39;HUC10&#39;</span>
+
+output_file = <span class="st">&#39;macav2_derived_AWR_huc10_masks.py&#39;</span>
+
+<span class="co"># Make numpy not ellipsize ndarrays (i.e. show the whole array </span>
+<span class="co"># when we print or try to get its string representation).</span>
+np.set_printoptions(threshold=np.nan)
+
+<span class="co"># Open the netCDF file and read the shapefile</span>
+ncdata = nc.Dataset(nc_file, mode=<span class="st">&#39;r&#39;</span>)
+geo_records = [x <span class="kw">for</span> x in Reader(shp_file).records()]
+
+<span class="co"># Empty dictionary for the masks</span>
+huc_masks = {}
+
+<span class="co"># Calculate the mask for each sub-polygon</span>
+<span class="kw">for</span> huc in geo_records:
+    huc_id = huc.attributes[shp_attr]
+    <span class="co">#print(huc_id)</span>
+    <span class="co"># Create a raster-sized mask with every cell set to False</span>
+    tmp_mask = np.tile(<span class="ot">False</span>, (<span class="dt">len</span>(ncdata.variables[nc_y]), <span class="dt">len</span>(ncdata.variables[nc_x])))
+    <span class="co"># Evaluate the cells within the sub-polygon&#39;s bounds. If their</span>
+    <span class="co"># centroid points are in the polygon, set the mask value to True.</span>
+    minx, miny, maxx, maxy = huc.geometry.bounds
+    <span class="kw">for</span> j,y in <span class="dt">enumerate</span>(ncdata.variables[nc_y]):
+        <span class="kw">if</span> y &gt;= miny and y &lt;= maxy:
+            <span class="kw">for</span> i,x in <span class="dt">enumerate</span>(ncdata.variables[nc_x]):
+                <span class="co"># We&#39;re looking at a raster that hasn&#39;t been converted</span>
+                <span class="co"># for Envision, so Western hemisphere longitudes have values</span>
+                <span class="co"># between 180 and 360 degrees East.</span>
+                <span class="kw">if</span> (x<span class="dv">-360</span>) &gt;= minx and (x<span class="dv">-360</span>) &lt;= maxx:
+                    tmp_mask[j,i] = huc.geometry.contains(sgeom.Point(x<span class="dv">-360</span>, y))
+    huc_masks[huc_id] = tmp_mask
+
+
+<span class="co"># Write the masks to an output file</span>
+<span class="co"># The output file will be a python library that we can import in other scripts</span>
+<span class="kw">with</span> <span class="dt">open</span>(output_file, <span class="st">&#39;w&#39;</span>) <span class="ch">as</span> f:
+    f.write(<span class="st">&#39;# Masks for the HUC10 polygons in the AWR subset rasters of MACAv2-METDATA</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.write(<span class="st">&#39;import numpy as np</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.write(<span class="st">&#39;huc10_masks = {</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    <span class="kw">for</span> k in huc_masks:
+        <span class="co"># Write each mask (dictionary entry) on a single line, getting rid</span>
+        <span class="co"># of unnecessary spaces and replacing True/False values with 1s and</span>
+        <span class="co"># 0s to save space. (This file will be large.)</span>
+        f.write(<span class="st">&quot;&#39;</span><span class="ot">%s</span><span class="st">&#39;: np.</span><span class="ot">%s</span><span class="st">,</span><span class="ch">\n</span><span class="st">&quot;</span>%(k, <span class="dt">repr</span>(huc_masks[k]).replace(<span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>,<span class="st">&#39;&#39;</span>).replace(<span class="st">&#39;False&#39;</span>,<span class="st">&#39;0&#39;</span>).replace(<span class="st">&#39;True&#39;</span>,<span class="st">&#39;1&#39;</span>).replace(<span class="st">&#39; &#39;</span>,<span class="st">&#39;&#39;</span>)))
+    f.write(<span class="st">&#39;}</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.close()</code></pre>
+<p>Make library of HUC masks:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">python</span> make_huc_masks.py</code></pre>
+<p>This took between 5 and 6 minutes for HUC8 (~26 MB), 10 minutes for HUC10 (~150 MB).</p>
+<p>Create script <code>zonal_means.py</code> to use the huc10 mask library.</p>
+<p><strong><code>zonal_means.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Extract data from netCDF files for use in SWAT.</span>
+<span class="co">#</span>
+<span class="co"># The netCDF files we&#39;re extracting from are the MACAv2-METDATA data with units</span>
+<span class="co"># converted for use with Envision and longitudes in the Western hemisphere</span>
+<span class="co"># converted to negative values. Since Envision and SWAT like the same units,</span>
+<span class="co"># we&#39;re not doing any unit conversions here like we would if extracting</span>
+<span class="co"># directly from the original MACAv2 netCDFs.</span>
+<span class="co">#</span>
+<span class="co"># We&#39;ve also added netcdf files of daily mean relative humidity (which we&#39;re</span>
+<span class="co"># not using in Envision) into our Envision directories to make things easier </span>
+<span class="co"># on our scripts.</span>
+<span class="co">#</span>
+<span class="co"># This script is intended to process an entire model directory. For each</span>
+<span class="co"># combination of climate variable and RCP, it reads all the matching files</span>
+<span class="co"># as a time series multi-file dataset, then loops over the set of masks</span>
+<span class="co"># and calculates a time series of averages over the masked cells and writes</span>
+<span class="co"># an output file containing the data for the masked region.</span>
+<span class="co">#</span>
+<span class="co"># This script requires two command line arguments:</span>
+<span class="co"># 1. input directory of netCDF files</span>
+<span class="co"># 2. output directory where mask subsets will be written</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-07-02</span>
+<span class="co">#</span>
+
+<span class="ch">from</span> netCDF4 <span class="ch">import</span> MFDataset
+<span class="ch">import</span> numpy <span class="ch">as</span> np
+<span class="ch">import</span> sys
+<span class="ch">import</span> os
+<span class="ch">import</span> macav2_derived_AWR_huc10_masks <span class="ch">as</span> masks <span class="co"># dictionary variable: &quot;huc10_masks&quot;</span>
+
+<span class="co"># Get inputs and output locations from command line arguments</span>
+in_dir = sys.argv[<span class="dv">1</span>]
+out_dir = sys.argv[<span class="dv">2</span>]
+
+
+rcps = [<span class="st">&quot;rcp45&quot;</span>, <span class="st">&quot;rcp85&quot;</span>]
+
+<span class="co"># Dictionary of climate variables</span>
+<span class="co"># Each key is the variable name in the netcdf file name</span>
+<span class="co"># Each value is a list containing:</span>
+<span class="co">#      0. the variable name *inside* the netcdf file</span>
+<span class="co">#      1. string formatter for the variable (for SWAT)</span>
+clim_vars = {<span class="st">&#39;pr&#39;</span>:[<span class="st">&#39;precipitation&#39;</span>,<span class="st">&#39;</span><span class="ot">%5.1f</span><span class="st">&#39;</span>], 
+             <span class="co">&#39;rhsmean&#39;</span>:[<span class="st">&#39;relative_humidity&#39;</span>,<span class="st">&#39;</span><span class="ot">%8.3f</span><span class="st">&#39;</span>],
+             <span class="co">&#39;rsds&#39;</span>:[<span class="st">&#39;surface_downwelling_shortwave_flux_in_air&#39;</span>,<span class="st">&#39;</span><span class="ot">%8.3f</span><span class="st">&#39;</span>], 
+             <span class="co">&#39;tasmax&#39;</span>:[<span class="st">&#39;air_temperature&#39;</span>,<span class="st">&#39;</span><span class="ot">%5.1f</span><span class="st">&#39;</span>], 
+             <span class="co">&#39;tasmin&#39;</span>:[<span class="st">&#39;air_temperature&#39;</span>,<span class="st">&#39;</span><span class="ot">%5.1f</span><span class="st">&#39;</span>], 
+             <span class="co">&#39;wind&#39;</span>:[<span class="st">&#39;wind_speed&#39;</span>,<span class="st">&#39;</span><span class="ot">%8.3f</span><span class="st">&#39;</span>]}
+
+
+<span class="kw">for</span> rcp in rcps:
+    <span class="kw">for</span> fvar in clim_vars.keys():
+        ncvar = clim_vars[fvar][<span class="dv">0</span>]
+        varfmt = clim_vars[fvar][<span class="dv">1</span>]
+
+        <span class="co"># expression for base filename of input file containing both</span>
+        <span class="co"># string formatters (e.g. &#39;%s&#39;) and wildcards for globbing</span>
+        infilename_expr = <span class="st">&#39;macav2metdata_</span><span class="ot">%s</span><span class="st">_*_r?i1p1_</span><span class="ot">%s</span><span class="st">_*.nc&#39;</span>
+
+        <span class="co"># replace the string formatters with values</span>
+        infilename_glob = infilename_expr % (fvar, rcp)
+
+        <span class="co"># combine the input directory with filename glob for a full path glob</span>
+        infile_glob = os.path.join(in_dir, infilename_glob)
+
+        <span class="co"># read multi-file dataset (all years for our current variable and rcp)</span>
+        mfd = MFDataset(infile_glob, aggdim=<span class="st">&#39;time&#39;</span>)
+
+        <span class="co"># create a variable for easier addressing/indexing</span>
+        ncdata = mfd.variables[ncvar][:]
+
+        <span class="kw">for</span> huc_id, huc_mask in masks.huc10_masks.items():
+            <span class="co"># set a distinct output directory for each huc_id</span>
+            outfiledir = os.path.join(out_dir, huc_id)
+
+            <span class="co"># create the huc_id output directory (any any necessary</span>
+            <span class="co"># intermediate directories, like &quot;mkdir -p&quot; in bash)</span>
+            os.makedirs(outfiledir, exist_ok=<span class="ot">True</span>)
+
+            <span class="co"># base name for output file</span>
+            outfilename = <span class="st">&#39;</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">.txt&#39;</span> % (huc_id, fvar, rcp)
+
+            <span class="co"># full path for output file</span>
+            outfile = os.path.join(outfiledir, outfilename)
+
+            <span class="co"># time series of area means for the cells matching the mask</span>
+            outdata = ncdata[:,huc_mask].mean(axis=<span class="dv">1</span>)
+
+            <span class="co"># save the point data to a file</span>
+            <span class="co"># using &#39;%.3f&#39; instead of varfmt to match example files I was sent</span>
+            np.savetxt(outfile, outdata, fmt=<span class="st">&#39;</span><span class="ot">%.3f</span><span class="st">&#39;</span>, newline=<span class="st">&#39;</span><span class="ch">\r\n</span><span class="st">&#39;</span>, header=<span class="st">&#39;20060101&#39;</span>, comments=<span class="st">&#39;&#39;</span>)
+            </code></pre>
+<p>Temporarily edit the script so that we only process one variable (tasmax) and run a test:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> python zonal_means.py AWR_Envision/inmcm4 AWR-test-SWAT</code></pre>
+<p>This took 21 minutes to calculate the polygon means for the entire time series for one variable and both RCPs. So we estimate that it should take roughly 126 minutes (slightly over two hours) to completely process one model serially and slightly under two days to complete the entire dataset.</p>
+<p>The script consumed a large amount of memory at certain steps, particularly reading the netCDF multi-file dataset and aliasing?/copying? the entire dataset into another variable. We increased the memory allocation of the jupyter VM to 64 GB; this, in addition to the 16 GB of disk space allocated to swap was sufficient to handle the high-memory steps. The inner loop where all our calculations occurred mostly used around 24 GB of RAM (close to the combined size of the netCDF files).</p>
+<p>Make a bash &quot;script&quot; defining an array of the HUC10 IDs for sourcing.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">awk</span> -F <span class="st">&#39;: &#39;</span> <span class="st">&#39;NF==2{sep=((FNR-2)%5==1 ? &quot;\n    &quot;: &quot; &quot;);dirs=dirs&quot;&quot;$1&quot;&quot;sep} END{print &quot;huc_ids=(&quot;dirs&quot;)&quot;}&#39;</span> macav2_derived_AWR_huc10_masks.py <span class="kw">&gt;</span> huc10_ids.sh</code></pre>
+<p>Make a file containing columns for the year (starting with 2006 = year 1) and day of year for all the days of the &quot;future&quot; dataset.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">echo</span> <span class="st">&quot;20060101&quot;</span> <span class="kw">&gt;</span> year_days_2006_2099.txt
+<span class="kw">for</span> <span class="kw">d</span> in <span class="dt">{0..34332}</span><span class="kw">;</span> <span class="kw">do</span> <span class="kw">date</span> --date=<span class="st">&quot;2006-01-01 +</span><span class="ot">${d}</span><span class="st"> days&quot;</span> +<span class="st">&quot;%Y%t%j&quot;</span><span class="kw">;</span> <span class="kw">done</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;{printf(&quot;%d\t%d\n&quot;,$1-2005,$2)}&#39;</span> <span class="kw">&gt;&gt;</span> year_days_2006_2099.txt</code></pre>
+<p>Create <code>zonal_envision_to_swat.sh</code> to run <code>zonal_means.py</code> for all models and combine variable sets into a single file for each huc_id-model-rcp combination.</p>
+<p><strong><code>zonal_envision_to_swat.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># This script is a wrapper for the python script zonal_means.py which </span>
+<span class="co"># processes a single model directory. The purpose of this script is to loop</span>
+<span class="co"># over the models and create output directories for the python script.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command</span>
+<span class="co"># line argument.</span>
+<span class="co">#</span>
+
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="co"># Skipping CCSM4 and NorESM1-M since these don&#39;t have relative humidity</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span> 
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span> 
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span> 
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="ot">sourcepdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+<span class="ot">destpdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT&quot;</span>
+
+<span class="co"># get the huc_ids array</span>
+<span class="kw">source</span> huc10_ids.sh
+
+<span class="co"># Set PATH variable so that we use the Anaconda python distribution</span>
+<span class="ot">PATH=</span>/opt/anaconda3/bin:<span class="ot">$PATH</span>
+
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="ot">sourcedir=</span><span class="st">&quot;</span><span class="ot">${sourcepdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="ot">destdir=</span><span class="st">&quot;</span><span class="ot">${destpdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+    <span class="kw">python</span> zonal_means.py <span class="ot">${sourcedir}</span> <span class="ot">${destdir}</span>
+
+    <span class="co"># The point_subset.py script creates files with a single variable</span>
+    <span class="co"># SWAT wants a two-column file with tasmax and tasmin separated by commas</span>
+    <span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+            <span class="kw">paste</span> year_days_2006_2099.txt <span class="ot">${destdir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_<span class="dt">{tasmin,tasmax,pr,rhsmean,rsds,wind}_${rcp}</span>.txt <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;NR&gt;1{printf(&quot;%d\t%d\t%.1f\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\n&quot;,$1,$2,$3,$4,$5,$6,$7,$8)}&#39;</span> <span class="kw">&gt;</span> <span class="ot">${destdir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_<span class="ot">${model}</span>_<span class="ot">${rcp}</span>_SWAT.txt
+        <span class="kw">done</span>  <span class="co"># end rcp loop</span>
+    <span class="kw">done</span>  <span class="co"># end huc_id loop</span>
+<span class="kw">done</span>  <span class="co"># end model loop</span></code></pre>
+<p>Finally, create the SWAT files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash zonal_envision_to_swat.sh AWR</code></pre>
+<p>This completed in slightly under 1808 minutes -- just over 30 hours. (This is 68635.62 times as fast as the 236 year estimate to complete with rasterstats.)</p>
+<p>Forgot to include mean temperature. Create new scripts <code>zonal_means_tasmean.py</code> and <code>zonal_envision_to_swat_tasmean.sh</code> to create the single-column files for mean temperature.</p>
+<p><strong><code>zonal_means_tasmean.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Extract data from netCDF files for use in SWAT.</span>
+<span class="co">#</span>
+<span class="co"># The netCDF files we&#39;re extracting from are the MACAv2-METDATA data with units</span>
+<span class="co"># converted for use with Envision and longitudes in the Western hemisphere</span>
+<span class="co"># converted to negative values. Since Envision and SWAT like the same units,</span>
+<span class="co"># we&#39;re not doing any unit conversions here like we would if extracting</span>
+<span class="co"># directly from the original MACAv2 netCDFs.</span>
+<span class="co">#</span>
+<span class="co"># We&#39;ve also added netcdf files of daily mean relative humidity (which we&#39;re</span>
+<span class="co"># not using in Envision) into our Envision directories to make things easier</span>
+<span class="co"># on our scripts.</span>
+<span class="co">#</span>
+<span class="co"># This script is intended to process an entire model directory. For each</span>
+<span class="co"># combination of climate variable and RCP, it reads all the matching files</span>
+<span class="co"># as a time series multi-file dataset, then loops over the set of points</span>
+<span class="co"># we want to use as SWAT weather stations and writes an output file containing</span>
+<span class="co"># the data for that point.</span>
+<span class="co">#</span>
+<span class="co"># This script is reduced to only process mean temperature.</span>
+<span class="co">#</span>
+<span class="co"># This script requires two command line arguments:</span>
+<span class="co"># 1. input directory of netCDF files</span>
+<span class="co"># 2. output directory where point subsets will be written (must already exist)</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-07-13</span>
+<span class="co">#</span>
+
+<span class="ch">from</span> netCDF4 <span class="ch">import</span> MFDataset
+<span class="ch">import</span> numpy <span class="ch">as</span> np
+<span class="ch">import</span> sys
+<span class="ch">import</span> os
+<span class="ch">import</span> macav2_derived_AWR_huc10_masks <span class="ch">as</span> masks <span class="co"># dictionary variable: &quot;huc10_masks&quot;</span>
+
+<span class="co"># Get inputs and output locations from command line arguments</span>
+in_dir = sys.argv[<span class="dv">1</span>]
+out_dir = sys.argv[<span class="dv">2</span>]
+
+
+rcps = [<span class="st">&quot;rcp45&quot;</span>, <span class="st">&quot;rcp85&quot;</span>]
+
+<span class="co"># Dictionary of climate variables</span>
+<span class="co"># Each key is the variable name in the netcdf file name</span>
+<span class="co"># Each value is a list containing:</span>
+<span class="co">#      0. the variable name *inside* the netcdf file</span>
+<span class="co">#      1. string formatter for the variable (for SWAT)</span>
+clim_vars = {<span class="st">&#39;tasmean&#39;</span>:[<span class="st">&#39;air_temperature&#39;</span>,<span class="st">&#39;</span><span class="ot">%5.1f</span><span class="st">&#39;</span>]}
+
+<span class="kw">for</span> rcp in rcps:
+    <span class="kw">for</span> fvar in clim_vars.keys():
+        ncvar = clim_vars[fvar][<span class="dv">0</span>]
+        varfmt = clim_vars[fvar][<span class="dv">1</span>]
+
+        <span class="co"># expression for base filename of input file containing both</span>
+        <span class="co"># string formatters (e.g. &#39;%s&#39;) and wildcards for globbing</span>
+        infilename_expr = <span class="st">&#39;macav2metdata_</span><span class="ot">%s</span><span class="st">_*_r?i1p1_</span><span class="ot">%s</span><span class="st">_*.nc&#39;</span>
+
+        <span class="co"># replace the string formatters with values</span>
+        infilename_glob = infilename_expr % (fvar, rcp)
+
+        <span class="co"># combine the input directory with filename glob for a full path glob</span>
+        infile_glob = os.path.join(in_dir, infilename_glob)
+
+        <span class="co"># read multi-file dataset (all years for our current variable and rcp)</span>
+        mfd = MFDataset(infile_glob, aggdim=<span class="st">&#39;time&#39;</span>)
+
+        <span class="co"># create a variable for easier addressing/indexing</span>
+        ncdata = mfd.variables[ncvar][:]
+
+        <span class="kw">for</span> huc_id, huc_mask in masks.huc10_masks.items():
+            <span class="co"># set a distinct output directory for each huc_id</span>
+            outfiledir = os.path.join(out_dir, huc_id)
+
+            <span class="co"># create the huc_id output directory (any any necessary</span>
+            <span class="co"># intermediate directories, like &quot;mkdir -p&quot; in bash)</span>
+            os.makedirs(outfiledir, exist_ok=<span class="ot">True</span>)
+
+            <span class="co"># base name for output file</span>
+            outfilename = <span class="st">&#39;</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">.txt&#39;</span> % (huc_id, fvar, rcp)
+
+            <span class="co"># full path for output file</span>
+            outfile = os.path.join(outfiledir, outfilename)
+
+            <span class="co"># time series of area means for the cells matching the mask</span>
+            outdata = ncdata[:,huc_mask].mean(axis=<span class="dv">1</span>)
+
+            <span class="co"># save the point data to a file</span>
+            <span class="co"># using &#39;%.3f&#39; instead of varfmt to match example files I was sent</span>
+            np.savetxt(outfile, outdata, fmt=<span class="st">&#39;</span><span class="ot">%.3f</span><span class="st">&#39;</span>, newline=<span class="st">&#39;</span><span class="ch">\r\n</span><span class="st">&#39;</span>, header=<span class="st">&#39;20060101&#39;</span>, comments=<span class="st">&#39;&#39;</span>)</code></pre>
+<p><strong><code>zonal_envision_to_swat_tasmean.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># This script is a wrapper for the python script zonal_means_tasmean.py which</span>
+<span class="co"># processes a single model directory. The purpose of this script is to loop</span>
+<span class="co"># over the models and create output directories for the python script.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command</span>
+<span class="co"># line argument.</span>
+<span class="co">#</span>
+
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="co"># Skipping CCSM4 and NorESM1-M since these don&#39;t have relative humidity</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span>
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span>
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span>
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="ot">sourcepdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+<span class="ot">destpdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT&quot;</span>
+
+<span class="co">## get the huc_ids array</span>
+<span class="co">#source huc10_ids.sh</span>
+
+<span class="co"># Set PATH variable so that we use the Anaconda python distribution</span>
+<span class="ot">PATH=</span>/opt/anaconda3/bin:<span class="ot">$PATH</span>
+
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="ot">sourcedir=</span><span class="st">&quot;</span><span class="ot">${sourcepdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="ot">destdir=</span><span class="st">&quot;</span><span class="ot">${destpdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+    <span class="kw">python</span> zonal_means_tasmean.py <span class="ot">${sourcedir}</span> <span class="ot">${destdir}</span>
+
+    <span class="co">## The point_subset.py script creates files with a single variable</span>
+    <span class="co">## SWAT wants a two-column file with tasmax and tasmin separated by commas</span>
+    <span class="co">#for h in ${huc_ids[@]}; do</span>
+    <span class="co">#    for rcp in ${RCPS[@]}; do</span>
+    <span class="co">#        paste year_days_2006_2099.txt ${destdir}/${h}/${h}_{tasmin,tasmax,pr,rhsmean,rsds,wind}_${rcp}.txt | awk &#39;NR&gt;1{printf(&quot;%d\t%d\t%.1f\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\n&quot;,$1,$2,$3,$4,$5,$6,$7,$8)}&#39; &gt; ${destdir}/${h}/${h}_${model}_${rcp}_SWAT.txt</span>
+    <span class="co">#    done  # end rcp loop</span>
+    <span class="co">#done  # end huc_id loop</span>
+<span class="kw">done</span>  <span class="co"># end model loop</span></code></pre>
+<p>Create the mean temperature files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2_Derived/
+<span class="kw">time</span> bash zonal_envision_to_swat_tasmean.sh AWR</code></pre>
+<p>This took 394 minutes (6.56 hours).</p>
+<p>Create new script <code>maca_swat2_AWR.sh</code> to combine all the single-column files including mean temperature into a multi-column file. (Copy from <code>maca_swat2.sh</code> and modify.)</p>
+<p><strong><code>maca_swat2_AWR.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># This script combines the single-column files of SWAT input variables </span>
+<span class="co"># into one multi-column file.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command</span>
+<span class="co"># line argument.</span>
+<span class="co">#</span>
+
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="co"># Skipping CCSM4 and NorESM1-M since these don&#39;t have relative humidity</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span> 
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span> 
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span> 
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="ot">sourcepdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT&quot;</span>
+<span class="ot">destpdir=</span><span class="st">&quot;/data/public/datasets/MACA/MACAv2_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT2&quot;</span>
+
+<span class="co"># get the huc_ids array</span>
+<span class="kw">source</span> huc10_ids.sh
+
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="ot">sourcedir=</span><span class="st">&quot;</span><span class="ot">${sourcepdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="ot">destdir=</span><span class="st">&quot;</span><span class="ot">${destpdir}</span><span class="st">/</span><span class="ot">${model}</span><span class="st">&quot;</span>
+    <span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+
+    <span class="co"># The point_subset.py script creates files with a single variable</span>
+    <span class="co"># SWAT wants a two-column file with tasmax and tasmin separated by commas</span>
+    <span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+            <span class="kw">paste</span> year_days_2006_2099.txt <span class="ot">${sourcedir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_<span class="dt">{tasmin,tasmax,tasmean,pr,rhsmean,rsds,wind}_${rcp}</span>.txt <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;NR&gt;1{printf(&quot;%d\t%d\t%.1f\t%.1f\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\n&quot;,$1,$2,$3,$4,$5,$6,$7,$8,$9)}&#39;</span> <span class="kw">&gt;</span> <span class="ot">${destdir}</span>/<span class="ot">${h}</span>_<span class="ot">${model}</span>_<span class="ot">${rcp}</span>_SWAT.txt
+        <span class="kw">done</span>  <span class="co"># end rcp loop</span>
+    <span class="kw">done</span>  <span class="co"># end huc_id loop</span>
+<span class="kw">done</span>  <span class="co"># end model loop</span></code></pre>
+<p>Combine the SWAT files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_swat2_AWR.sh AWR</code></pre>
+<p>This took 281 minutes (4.68 hours).</p>
+<h1 id="metdata">METDATA</h1>
+<h2 id="downloading-1">Downloading</h2>
+<p>Create <code>download2.sh</code> to download complete metdata files for 2017 (since our existing files don't contain the entire year) and the partial files for 2018 (up to current date, 2017-07-02).</p>
+<p><strong><code>download2.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+
+<span class="kw">for</span> <span class="kw">v</span> in <span class="dt">{pr,sph,srad,tmmx,tmmn,rmax,rmin,vs}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="co">#[[ -f ${v}_2017.nc ]] &amp;&amp; rm ${v}_2017.nc</span>
+    <span class="co">#for y in {2017..2018}; do</span>
+    <span class="kw">for</span> <span class="kw">y</span> in <span class="dt">{1979..2016}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="ot">url=</span><span class="st">&quot;http://www.northwestknowledge.net/metdata/data/</span><span class="ot">${v}</span><span class="st">_</span><span class="ot">${y}</span><span class="st">.nc&quot;</span>
+        <span class="kw">wget</span> <span class="ot">${url}</span>
+    <span class="kw">done</span>
+<span class="kw">done</span></code></pre>
+<p>Run the download script on TIGER's data transfer node to take advantage of the fast network connection.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/METDATA/
+<span class="kw">bash</span> download2.sh</code></pre>
+<p>This took about three minutes.</p>
+<p>After running into a problem later in the process, we noticed that the grid on the newly downloaded 2017 and 2018 files is slightly different from the older files, so to keep things consistent we modified <code>download2.sh</code> to get years 1979 to 2016, deleted the old files for those years, and re-ran <code>download2.sh</code>.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/METDATA/
+<span class="kw">rm</span> *_<span class="dt">{1979..2016}</span>.nc
+<span class="kw">time</span> bash download2.sh</code></pre>
+<p>This took just under 85 minutes.</p>
+<h2 id="subsetting-1">Subsetting</h2>
+<h3 id="finding-coordinates">Finding Coordinates</h3>
+<p>Recall the latitude and longitude extents from the shapefile:</p>
+<pre><code>Lat: 
+    31.208320 to 39.383345           # Latitude bounds from shapefile
+    --&gt; 31.1916666666667 to 39.4     # Raster cell coordinates nearest to the bounds
+    --&gt; 31.19 to 39.41               # Truncate to three decimal places and round up or 
+                                     # down by 0.001 to make sure we get the end cells
+Lon: 
+    -106.599758 to -90.143003                    # Latitude bounds from shapefile
+    --&gt; -106.599999966667 to -90.1416666333333   # Raster cell coordinates nearest to the bounds
+    --&gt; -106.60 to -90.14            # Truncate to three decimal places and round up or 
+                                     # down by 0.001 to make sure we get the end cells</code></pre>
+<p>Generic form for subset commands:<br /> <code>ncks -3 -d lat,31.19,39.41 -d lon,-106.60,-90.14 infile.nc outfile.nc</code></p>
+<p>We create a test subset file and view it in QGIS to verify that it covers the AWR area.</p>
+<p><img src="METDATA_Derived/AWR.png" alt="METDATA_Derived/AWR.png" /></p>
+<h3 id="create-subset-files-1">Create subset files</h3>
+<p>Create the AWR subset files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/METDATA_Derived
+<span class="kw">mkdir</span> AWR
+<span class="kw">for</span> <span class="kw">v</span> in <span class="dt">{pr,sph,srad,tmmx,tmmn,rmax,rmin,vs}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">for</span> <span class="kw">y</span> in <span class="dt">{1979..2018}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="ot">filename=</span><span class="st">&quot;</span><span class="ot">${v}</span><span class="st">_</span><span class="ot">${y}</span><span class="st">.nc&quot;</span>
+        <span class="kw">ncks</span> -3 -d lat,31.19,39.41 -d lon,-106.60,-90.14 ../METDATA/<span class="ot">${filename}</span> AWR/<span class="ot">${filename}</span>
+    <span class="kw">done</span>
+<span class="kw">done</span></code></pre>
+<p>This finished in 69 minutes.</p>
+<h2 id="converting-for-envision-models-1">Converting for Envision Models</h2>
+<p>Create script <code>metdata_subset_to_envision2.sh</code>. (Copy <code>metdata_subset_to_envision.sh</code> and update it to include year 2018.)</p>
+<p><strong><code>metdata_subset_to_envision2.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Convert watershed-specific subsets from METDATA into a format usable</span>
+<span class="co"># in Envision. Envision-compatible netCDF files need to be in netCDF 3</span>
+<span class="co"># (classic) format and require dimension ordering like (time, lat, lon)</span>
+<span class="co"># instead of (time, lon, lat).</span>
+<span class="co">#</span>
+<span class="co"># Also convert relative humidity (for later conversion to SWAT) even though</span>
+<span class="co"># it&#39;s not needed for Envision.</span>
+<span class="co">#</span>
+<span class="co"># Additionally we will need to change some units and derive new variables.</span>
+<span class="co">#</span>
+<span class="co"># Convert temperature units from Kelvins to degrees Celsius.</span>
+<span class="co">#</span>
+<span class="co"># Calculate mean daily temperatures as:</span>
+<span class="co">#     tasmean = mean(tasmax, tasmin)</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command line</span>
+<span class="co"># argument.</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2017-10-09</span>
+<span class="co">#</span>
+<span class="co"># 2018-07-03 -- updated year set to include 2018</span>
+<span class="co">#</span>
+
+
+<span class="kw">if [</span> <span class="st">&quot;</span><span class="ot">$#</span><span class="st">&quot;</span> <span class="ot">-ne</span> 1<span class="kw"> ]</span>; <span class="kw">then</span>
+    <span class="kw">echo</span> <span class="st">&quot;This script requires the watershed directory name to be&quot;</span>
+    <span class="kw">echo</span> <span class="st">&quot;included as a command line argument.&quot;</span>
+    <span class="kw">exit</span> 1<span class="kw">;</span>
+<span class="kw">fi</span>
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="co"># directories</span>
+<span class="ot">sourcedir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">&quot;</span>
+<span class="ot">destdir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+<span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+
+
+<span class="co"># Create a temp directory</span>
+<span class="ot">tmpdir=$(</span><span class="kw">mktemp</span> -d<span class="ot">)</span>
+
+<span class="kw">for</span> <span class="kw">year</span> in <span class="dt">{1979..2018}</span><span class="kw">;</span> <span class="kw">do</span>
+
+    <span class="co"># Only correct dimensions for these variables</span>
+    <span class="kw">for</span> <span class="kw">var</span> in <span class="dt">{pr,sph,srad,vs}</span><span class="kw">;</span> <span class="kw">do</span>
+        <span class="ot">infile=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${var}</span><span class="st">_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+        <span class="ot">outfile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${var}</span><span class="st">_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+        <span class="kw">ncpdq</span> -3 -a lat,lon <span class="ot">${infile}</span> <span class="ot">${outfile}</span>
+    <span class="kw">done</span>
+
+    <span class="co"># Rename precipitation variable so it will match the MACAv2 data</span>
+    <span class="co"># This isn&#39;t strictly necessary for Envision but makes it easier</span>
+    <span class="co"># to use both datasets.</span>
+    <span class="kw">ncrename</span> -v precipitation_amount,precipitation <span class="ot">${destdir}</span>/pr_<span class="ot">${year}</span>.nc
+
+    <span class="co"># Convert temperatures from Kelvins to degrees Celsius</span>
+    <span class="co"># and re-order dimensions</span>
+    <span class="kw">for</span> <span class="kw">var</span> in tmmn tmmx<span class="kw">;</span> <span class="kw">do</span>
+        <span class="ot">infile=</span><span class="st">&quot;</span><span class="ot">${sourcedir}</span><span class="st">/</span><span class="ot">${var}</span><span class="st">_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+        <span class="ot">outfile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/</span><span class="ot">${var}</span><span class="st">_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+        <span class="ot">tmpfile=</span><span class="st">&quot;</span><span class="ot">${tmpdir}</span><span class="st">/</span><span class="ot">${var}</span><span class="st">_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+        <span class="kw">ncap2</span> -s <span class="st">&#39;air_temperature=(air_temperature - 273.15)&#39;</span> <span class="ot">${infile}</span> <span class="ot">${tmpfile}</span>
+        <span class="kw">ncatted</span> -a units,air_temperature,o,char,<span class="st">&#39;C&#39;</span> <span class="ot">${tmpfile}</span>
+        <span class="kw">ncpdq</span> -3 -a lat,lon <span class="ot">${tmpfile}</span> <span class="ot">${outfile}</span>
+        <span class="kw">rm</span> <span class="ot">${tmpfile}</span>
+    <span class="kw">done</span>
+
+    <span class="co"># Create the mean temperature file</span>
+    <span class="ot">infiles=(${destdir}</span>/tmm<span class="dt">{x,n}_${year}</span>.nc<span class="ot">)</span>  <span class="co"># array of two filenames</span>
+    <span class="ot">outfile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/tmmean_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+    <span class="kw">nces</span> <span class="ot">${infiles[@]}</span> <span class="ot">${outfile}</span>
+    <span class="co"># Update metadata</span>
+    <span class="kw">ncatted</span> -a description,air_temperature,o,c,<span class="st">&#39;Daily Mean Temperature&#39;</span> <span class="ot">${outfile}</span>
+
+    <span class="co"># Create mean relative humidity file</span>
+    <span class="ot">infiles=(${sourcedir}</span>/rm<span class="dt">{in,ax}_${year}</span>.nc<span class="ot">)</span>  <span class="co"># array of two filenames</span>
+    <span class="ot">outfile=</span><span class="st">&quot;</span><span class="ot">${destdir}</span><span class="st">/rmean_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+    <span class="ot">tmpfile=</span><span class="st">&quot;</span><span class="ot">${tmpdir}</span><span class="st">/rmean_</span><span class="ot">${year}</span><span class="st">.nc&quot;</span>
+    <span class="kw">nces</span> <span class="ot">${infiles[@]}</span> <span class="ot">${tmpfile}</span>
+    <span class="kw">ncpdq</span> -3 -a lat,lon <span class="ot">${tmpfile}</span> <span class="ot">${outfile}</span>
+    <span class="kw">rm</span> <span class="ot">${tmpfile}</span>
+    <span class="kw">ncatted</span> -a description,relative_humidity,o,c,<span class="st">&#39;Daily Mean Relative Humidity&#39;</span> -a cell_methods,relative_humidity,o,c,<span class="st">&#39;time: mean(i</span>
+<span class="st">nterval: 24 hours)&#39;</span> <span class="ot">${outfile}</span>
+
+<span class="kw">done</span>  <span class="co"># end of years loop</span>
+
+<span class="co"># Cleanup: remove the temp directory we created at the beginning</span>
+<span class="kw">rm</span> -rf <span class="ot">${tmpdir}</span></code></pre>
+<p>Create the Envision files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash metdata_subset_to_envision2.sh AWR</code></pre>
+<p>This took slightly under 52 minutes.</p>
+<h2 id="converting-for-swat-models-1">Converting for SWAT Models</h2>
+<p>Create script <code>metdata_make_huc_masks.py</code> to create the HUC10 mask library for METDATA.</p>
+<p><strong><code>metdata_make_huc_masks.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Make a library of raster masks for the HUC10 polygons in the AWR</span>
+<span class="co"># subset files of METDATA.</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-07-12</span>
+<span class="co">#</span>
+
+<span class="ch">import</span> netCDF4 <span class="ch">as</span> nc
+<span class="ch">import</span> numpy <span class="ch">as</span> np
+<span class="ch">from</span> cartopy.io.shapereader <span class="ch">import</span> Reader
+<span class="ch">import</span> shapely.geometry <span class="ch">as</span> sgeom
+
+nc_file = <span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR/tmmx_2018.nc&#39;</span>
+shp_file = <span class="st">&#39;huc10_bnd/AWR_HUC10.shp&#39;</span>
+
+nc_x = <span class="st">&#39;lon&#39;</span>
+nc_y = <span class="st">&#39;lat&#39;</span>
+nc_var = <span class="st">&#39;air_temperature&#39;</span>
+shp_attr = <span class="st">&#39;HUC10&#39;</span>
+
+output_file = <span class="st">&#39;metdata_derived_AWR_huc10_masks.py&#39;</span>
+
+<span class="co"># Make numpy not ellipsize ndarrays (i.e. show the whole array </span>
+<span class="co"># when we print or try to get its string representation).</span>
+np.set_printoptions(threshold=np.nan)
+
+<span class="co"># Open the netCDF file and read the shapefile</span>
+ncdata = nc.Dataset(nc_file, mode=<span class="st">&#39;r&#39;</span>)
+geo_records = [x <span class="kw">for</span> x in Reader(shp_file).records()]
+
+<span class="co"># Empty dictionary for the masks</span>
+huc_masks = {}
+
+<span class="co"># Calculate the mask for each sub-polygon</span>
+<span class="kw">for</span> huc in geo_records:
+    huc_id = huc.attributes[shp_attr]
+    <span class="co">#print(huc_id)</span>
+    <span class="co"># Create a raster-sized mask with every cell set to False</span>
+    tmp_mask = np.tile(<span class="ot">False</span>, (<span class="dt">len</span>(ncdata.variables[nc_y]), <span class="dt">len</span>(ncdata.variables[nc_x])))
+    <span class="co"># Evaluate the cells within the sub-polygon&#39;s bounds. If their</span>
+    <span class="co"># centroid points are in the polygon, set the mask value to True. </span>
+    minx, miny, maxx, maxy = huc.geometry.bounds
+    <span class="kw">for</span> j,y in <span class="dt">enumerate</span>(ncdata.variables[nc_y]):
+        <span class="kw">if</span> y &gt;= miny and y &lt;= maxy:
+            <span class="kw">for</span> i,x in <span class="dt">enumerate</span>(ncdata.variables[nc_x]):
+                <span class="kw">if</span> x &gt;= minx and x &lt;= maxx:
+                    tmp_mask[j,i] = huc.geometry.contains(sgeom.Point(x, y))
+    huc_masks[huc_id] = tmp_mask
+
+
+<span class="co"># Write the masks to an output file</span>
+<span class="co"># The output file will be a python library that we can import in other scripts</span>
+<span class="kw">with</span> <span class="dt">open</span>(output_file, <span class="st">&#39;w&#39;</span>) <span class="ch">as</span> f:
+    f.write(<span class="st">&#39;# Masks for the HUC10 polygons in the AWR subset rasters of METDATA</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.write(<span class="st">&#39;import numpy as np</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.write(<span class="st">&#39;huc10_masks = {</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    <span class="kw">for</span> k in huc_masks:
+        <span class="co"># Write each mask (dictionary entry) on a single line, getting rid</span>
+        <span class="co"># of unnecessary spaces and replacing True/False values with 1s and</span>
+        <span class="co"># 0s to save space. (This file will be large.)</span>
+        f.write(<span class="st">&quot;&#39;</span><span class="ot">%s</span><span class="st">&#39;: np.</span><span class="ot">%s</span><span class="st">,</span><span class="ch">\n</span><span class="st">&quot;</span>%(k, <span class="dt">repr</span>(huc_masks[k]).replace(<span class="st">&#39;</span><span class="ch">\n</span><span class="st">&#39;</span>,<span class="st">&#39;&#39;</span>).replace(<span class="st">&#39;False&#39;</span>,<span class="st">&#39;0&#39;</span>).replace(<span class="st">&#39;True&#39;</span>,<span class="st">&#39;1&#39;</span>).replace(<span class="st">&#39; &#39;</span>,<span class="st">&#39;&#39;</span>)))
+    f.write(<span class="st">&#39;}</span><span class="ch">\n</span><span class="st">&#39;</span>)
+    f.close()</code></pre>
+<p>Make library of HUC masks:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> python metdata_make_huc_masks.py</code></pre>
+<p>This took about 9.5 minutes.</p>
+<p>Copy the mask library and the <code>huc10_ids.sh</code> (created earlier for MACAv2) script to the <code>METDATA_Derived</code> directory.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cp</span> metdata_derived_AWR_huc10_masks.py /data/public/datasets/MACA/METDATA_Derived/
+<span class="kw">cd</span> /data/public/datasets/MACA/METDATA_Derived/
+<span class="kw">cp</span> ../MACAv2_Derived/huc10_ids.sh ./</code></pre>
+<p>Create script <code>metdata_zonal_means.py</code> to use the HUC10 mask library.</p>
+<p><strong><code>metdata_zonal_means.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#</span>
+<span class="co"># Extract data from netCDF files for use in SWAT.</span>
+<span class="co">#</span>
+<span class="co"># The netCDF files we&#39;re extracting from are the METDATA data with units</span>
+<span class="co"># converted for use with Envision. Since Envision and SWAT like the same units,</span>
+<span class="co"># we&#39;re not doing any unit conversions here like we would if extracting</span>
+<span class="co"># directly from the original METDATA netCDFs.</span>
+<span class="co">#</span>
+<span class="co"># We&#39;ve also added netcdf files of daily mean relative humidity (which we&#39;re</span>
+<span class="co"># not using in Envision) into our Envision directories to make things easier</span>
+<span class="co"># on our scripts.</span>
+<span class="co">#</span>
+<span class="co"># This script is intended to process a geographical subset of METDATA. For each</span>
+<span class="co"># climate variable, it reads all the matching files as a time series multi-file</span>
+<span class="co"># dataset, then loops over the set of points we want to use as SWAT weather</span>
+<span class="co"># stations and writes an output file containing the data for that point.</span>
+<span class="co">#</span>
+<span class="co"># This script requires three command line arguments:</span>
+<span class="co"># 1. input directory of netCDF files</span>
+<span class="co"># 2. output directory where point subsets will be written (must already exist)</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-07-04</span>
+<span class="co">#</span>
+
+<span class="kw">from</span> netCDF4 import MFDataset
+<span class="kw">import</span> numpy as np
+<span class="kw">import</span> sys
+<span class="kw">import</span> os
+<span class="kw">import</span> metdata_derived_AWR_huc10_masks as masks <span class="co"># dictionary variable: &quot;huc10_masks&quot;</span>
+
+<span class="co"># Get inputs and output locations from command line arguments</span>
+<span class="kw">in_dir</span> = sys.argv[1]
+<span class="kw">out_dir</span> = sys.argv[2]    <span class="co"># This directory should already exist.</span>
+
+<span class="co"># Dictionary of climate variables</span>
+<span class="co"># Each key is the variable name in the netcdf file name</span>
+<span class="co"># Each value is the variable name *inside* the netcdf file</span>
+<span class="kw">clim_vars</span> = {<span class="st">&#39;pr&#39;</span>:<span class="st">&#39;precipitation&#39;</span>,
+             <span class="st">&#39;rmean&#39;</span>:<span class="st">&#39;relative_humidity&#39;</span>,
+             <span class="st">&#39;srad&#39;</span>:<span class="st">&#39;surface_downwelling_shortwave_flux_in_air&#39;</span>,
+             <span class="st">&#39;tmmx&#39;</span>:<span class="st">&#39;air_temperature&#39;</span>,
+             <span class="st">&#39;tmmn&#39;</span>:<span class="st">&#39;air_temperature&#39;</span>,
+             <span class="st">&#39;vs&#39;</span>:<span class="st">&#39;wind_speed&#39;</span>}
+
+<span class="kw">for</span> <span class="kw">fvar</span> in clim_vars.keys()<span class="kw">:</span>
+    <span class="kw">ncvar</span> = clim_vars[fvar]
+
+    <span class="co"># file names will have the form of fvar_year.nc</span>
+    <span class="kw">infilename_glob</span> = fvar+<span class="st">&#39;_*.nc&#39;</span>
+
+    <span class="co"># combine the input directory with filename glob for a full path glob</span>
+    <span class="kw">infile_glob</span> = os.path.join(in_dir, infilename_glob)
+
+    <span class="co"># read multi-file dataset (all years for our current variable)</span>
+    <span class="kw">mfd</span> = MFDataset(infile_glob, aggdim=<span class="st">&#39;day&#39;</span>)
+
+    <span class="co"># create a variable for easier addressing/indexing</span>
+    <span class="kw">ncdata</span> = mfd.variables[ncvar][:]
+
+    <span class="kw">for</span> <span class="kw">huc_id</span>, huc_mask in masks.huc10_masks.items()<span class="kw">:</span>
+        <span class="co"># set a distinct output directory for each huc_id</span>
+        <span class="kw">outfiledir</span> = os.path.join(out_dir, huc_id)
+
+        <span class="co"># create the huc_id output directory (any any necessary</span>
+        <span class="co"># intermediate directories, like &quot;mkdir -p&quot; in bash)</span>
+        <span class="kw">os.makedirs</span>(outfiledir, exist_ok=True)
+
+        <span class="co"># base name for output file</span>
+        <span class="kw">outfilename</span> = <span class="st">&#39;%s_%s.txt&#39;</span> % (huc_id, fvar)
+
+        <span class="co"># full path for output file</span>
+        <span class="kw">outfile</span> = os.path.join(outfiledir, outfilename)
+
+        <span class="co"># time series of area means for the cells matching the mask</span>
+        <span class="kw">outdata</span> = ncdata[:,huc_mask].mean(axis=1)
+
+        <span class="co"># save the point data to a file</span>
+        <span class="co"># using &#39;%.3f&#39; instead of varfmt to match example files I was sent</span>
+        <span class="kw">np.savetxt</span>(outfile, outdata, fmt=<span class="st">&#39;%.3f&#39;</span>, newline=<span class="st">&#39;\r\n&#39;</span>, header=<span class="st">&#39;19790101&#39;</span>, comments=<span class="st">&#39;&#39;</span>)</code></pre>
+<p>Get the first and last dates from the METDATA dataset by running <code>ncdump -v day FILE.nc</code> for one of the 1979 files and one of the 2018 files.</p>
+<p>First day: 28854 (days since 1900-01-01) --&gt; January 1, 1979<br />Last day: 43280 (days since 1900-01-01) --&gt; July 1, 2018</p>
+<p>Make a file containing columns for the year and day of year for all the days of the dataset.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">echo</span> <span class="st">&quot;19790101&quot;</span> <span class="kw">&gt;</span> year_days_1979_2018-07-01.txt
+<span class="kw">for</span> <span class="kw">d</span> in <span class="dt">{28854..43280}</span><span class="kw">;</span> <span class="kw">do</span> <span class="kw">date</span> --date=<span class="st">&quot;1900-01-01 +</span><span class="ot">${d}</span><span class="st"> days&quot;</span> +<span class="st">&quot;%Y%t%j&quot;</span><span class="kw">;</span> <span class="kw">done</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;{printf(&quot;%d\t%d\n&quot;,$1-1978,$2)}&#39;</span> <span class="kw">&gt;&gt;</span> year_days_1979_2018-07-01.txt</code></pre>
+<p>Create script <code>metdata_zonal_envision_to_swat.sh</code> to run <code>metdata_zonal_means.py</code> and combine variable sets into a single file for each huc_id.</p>
+<p><strong><code>metdata_zonal_envision_to_swat.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># This script is a wrapper for the python script metdata_point_subset.py</span>
+<span class="co"># which processes a directory containing a geographical subset of the METDATA</span>
+<span class="co"># dataset.</span>
+<span class="co">#</span>
+<span class="co"># This script performs some post-processing to create a SWAT temperature</span>
+<span class="co"># file with max and min temperatures.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command</span>
+<span class="co"># line argument.</span>
+<span class="co">#</span>
+
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="ot">sourcedir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">_Envision&quot;</span>
+<span class="ot">destdir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT&quot;</span>
+<span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+
+<span class="co"># get the huc_ids array</span>
+<span class="kw">source</span> huc10_ids.sh
+
+<span class="co"># Set PATH variable so that we use the Anaconda python distribution</span>
+<span class="ot">PATH=</span>/opt/anaconda3/bin:<span class="ot">$PATH</span>
+
+<span class="kw">python</span> metdata_zonal_means.py <span class="ot">${sourcedir}</span> <span class="ot">${destdir}</span>
+
+<span class="co"># The point_subset.py script creates files with a single variable</span>
+<span class="co"># SWAT wants a two-column file with tasmax and tasmin separated by commas</span>
+<span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">paste</span> year_days_1979_2018-07-01.txt <span class="ot">${destdir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_<span class="dt">{tmmn,tmmx,pr,rmean,srad,vs}</span>.txt <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;NR&gt;1{printf(&quot;%d\t%d\t%.1f\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\n&quot;,$1,$2,$3,$4,$5,$6,$7,$8)}&#39;</span> <span class="kw">&gt;</span> <span class="ot">${destdir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_SWAT.txt
+<span class="kw">done</span>  <span class="co"># end huc_id loop</span></code></pre>
+<p>Finally, create the SWAT files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash metdata_zonal_envision_to_swat.sh AWR</code></pre>
+<p>This took slightly under 39 minutes.</p>
+<p>We forgot to include mean temperature. Create new script <code>metdata_zonal_means_tmmean.py</code> to create the single-column files for mean temperature.</p>
+<p><strong><code>metdata_zonal_means_tmmean.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Extract data from netCDF files for use in SWAT.</span>
+<span class="co">#</span>
+<span class="co"># The netCDF files we&#39;re extracting from are the METDATA data with units</span>
+<span class="co"># converted for use with Envision. Since Envision and SWAT like the same units,</span>
+<span class="co"># we&#39;re not doing any unit conversions here like we would if extracting</span>
+<span class="co"># directly from the original METDATA netCDFs.</span>
+<span class="co">#</span>
+<span class="co"># We&#39;ve also added netcdf files of daily mean relative humidity (which we&#39;re</span>
+<span class="co"># not using in Envision) into our Envision directories to make things easier</span>
+<span class="co"># on our scripts.</span>
+<span class="co">#</span>
+<span class="co"># This script is intended to process a geographical subset of METDATA. For each</span>
+<span class="co"># climate variable, it reads all the matching files as a time series multi-file</span>
+<span class="co"># dataset, then loops over the set of points we want to use as SWAT weather</span>
+<span class="co"># stations and writes an output file containing the data for that point.</span>
+<span class="co">#</span>
+<span class="co"># This script requires three command line arguments:</span>
+<span class="co"># 1. input directory of netCDF files</span>
+<span class="co"># 2. output directory where point subsets will be written (must already exist)</span>
+<span class="co">#</span>
+<span class="co">#</span>
+<span class="co"># Evan Linde, Oklahoma State University, 2018-07-04</span>
+<span class="co">#</span>
+
+<span class="ch">from</span> netCDF4 <span class="ch">import</span> MFDataset
+<span class="ch">import</span> numpy <span class="ch">as</span> np
+<span class="ch">import</span> sys
+<span class="ch">import</span> os
+<span class="ch">import</span> metdata_derived_AWR_huc10_masks <span class="ch">as</span> masks <span class="co"># dictionary variable: &quot;huc10_masks&quot;</span>
+
+<span class="co"># Get inputs and output locations from command line arguments</span>
+in_dir = sys.argv[<span class="dv">1</span>]
+out_dir = sys.argv[<span class="dv">2</span>]    <span class="co"># This directory should already exist.</span>
+
+<span class="co"># Dictionary of climate variables</span>
+<span class="co"># Each key is the variable name in the netcdf file name</span>
+<span class="co"># Each value is the variable name *inside* the netcdf file</span>
+clim_vars = {<span class="st">&#39;tmmean&#39;</span>:<span class="st">&#39;air_temperature&#39;</span>}
+
+<span class="kw">for</span> fvar in clim_vars.keys():
+    ncvar = clim_vars[fvar]
+
+    <span class="co"># file names will have the form of fvar_year.nc</span>
+    infilename_glob = fvar+<span class="st">&#39;_*.nc&#39;</span>
+
+    <span class="co"># combine the input directory with filename glob for a full path glob</span>
+    infile_glob = os.path.join(in_dir, infilename_glob)
+
+    <span class="co"># read multi-file dataset (all years for our current variable)</span>
+    mfd = MFDataset(infile_glob, aggdim=<span class="st">&#39;day&#39;</span>)
+
+    <span class="co"># create a variable for easier addressing/indexing</span>
+    ncdata = mfd.variables[ncvar][:]
+
+    <span class="kw">for</span> huc_id, huc_mask in masks.huc10_masks.items():
+        <span class="co"># set a distinct output directory for each huc_id</span>
+        outfiledir = os.path.join(out_dir, huc_id)
+
+        <span class="co"># create the huc_id output directory (any any necessary</span>
+        <span class="co"># intermediate directories, like &quot;mkdir -p&quot; in bash)</span>
+        os.makedirs(outfiledir, exist_ok=<span class="ot">True</span>)
+
+        <span class="co"># base name for output file</span>
+        outfilename = <span class="st">&#39;</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">.txt&#39;</span> % (huc_id, fvar)
+
+        <span class="co"># full path for output file</span>
+        outfile = os.path.join(outfiledir, outfilename)
+
+        <span class="co"># time series of area means for the cells matching the mask</span>
+        outdata = ncdata[:,huc_mask].mean(axis=<span class="dv">1</span>)
+
+        <span class="co"># save the point data to a file</span>
+        <span class="co"># using &#39;%.3f&#39; instead of varfmt to match example files I was sent</span>
+        np.savetxt(outfile, outdata, fmt=<span class="st">&#39;</span><span class="ot">%.3f</span><span class="st">&#39;</span>, newline=<span class="st">&#39;</span><span class="ch">\r\n</span><span class="st">&#39;</span>, header=<span class="st">&#39;19790101&#39;</span>, comments=<span class="st">&#39;&#39;</span>)</code></pre>
+<p>Create the mean temperature files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/METDATA_Derived/
+<span class="kw">time</span> python metdata_zonal_means_tmmean.py AWR_Envision AWR_SWAT</code></pre>
+<p>This took just over 7 minutes.</p>
+<p>Create new script <code>metdata_swat2_AWR.sh</code> to combine all the single-column files including mean temperature into a multi-column file. (Copy from <code>metdata_swat2.sh</code> and modify.)</p>
+<p><strong><code>metdata_swat2_AWR.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># This script combines the single-column files of SWAT input variables</span>
+<span class="co"># into one multi-column file.</span>
+<span class="co">#</span>
+<span class="co"># This script requires the watershed name to be passed in as a command</span>
+<span class="co"># line argument.</span>
+<span class="co">#</span>
+
+<span class="ot">watershed=</span><span class="st">&quot;</span><span class="ot">$1</span><span class="st">&quot;</span>
+
+<span class="ot">sourcedir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT&quot;</span>
+<span class="ot">destdir=</span><span class="st">&quot;/data/public/datasets/MACA/METDATA_Derived/</span><span class="ot">${watershed}</span><span class="st">_SWAT2&quot;</span>
+<span class="kw">mkdir</span> -p <span class="ot">${destdir}</span>
+
+<span class="co"># get the huc_ids array</span>
+<span class="kw">source</span> huc10_ids.sh
+
+<span class="co"># The point_subset.py script creates files with a single variable</span>
+<span class="co"># SWAT wants a two-column file with tasmax and tasmin separated by commas</span>
+<span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">paste</span> year_days_1979_2018-07-01.txt <span class="ot">${sourcedir}</span>/<span class="ot">${h}</span>/<span class="ot">${h}</span>_<span class="dt">{tmmn,tmmx,tmmean,pr,rmean,srad,vs}</span>.txt <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;NR&gt;1{printf(&quot;%d\t%d\t%.1f\t%.1f\t%.1f\t%.2f\t%.2f\t%.2f\t%.2f\n&quot;,$1,$2,$3,$4,$5,$6,$7,$8,$9)}&#39;</span> <span class="kw">&gt;</span> <span class="ot">${destdir}</span>/<span class="ot">${h}</span>_SWAT.txt
+<span class="kw">done</span>  <span class="co"># end huc_id loop</span></code></pre>
+<p>Combine the SWAT files:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash metdata_swat2_AWR.sh AWR</code></pre>
+<p>This took slightly under 5 minutes.</p>
+<h1 id="calculating-potential-evapotranspiration">Calculating Potential Evapotranspiration</h1>
+<p>The researcher working on AWR requested that we also calculate potential evapotranspiration (PET) with the FAO-56 method and suggested the <a href="https://pyeto.readthedocs.io/en/latest/"><code>PyETo</code> python library</a>.</p>
+<p>After figuring out the functions we would need to call, we found that (contrary to the documentation) the library was not in <a href="https://pypi.org/">PyPI</a> and could not be installed with <code>pip</code>. Since we had already figured out how to use <code>PyETo</code>, and did not want to figure out a different library, the solution was to download the library from its <a href="https://github.com/woodcrafty/PyETo">github repository</a>.</p>
+<p>In order to calculate PET, we determined that we had all the variables we needed in the multi-column SWAT files except for latitude and elevation. The researcher provided us with a spreadsheet containing latitude and elevation values to use for each of the HUC10 polygons and we exported this to a tab-delimited text file <code>huc10_elevation_latitude.txt</code>.</p>
+<p>Download PyETo and de-package-ify it bit so we can use it based on relative file paths (i.e. without installing it).</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">git</span> clone https://github.com/woodcrafty/PyETo
+<span class="kw">mv</span> PyETo/pyeto/__init__.py PyETo/pyeto/__init__.py.bad
+<span class="kw">sed</span> -i <span class="st">&#39;/from pyeto\.convert import/s/pyeto/PyETo.pyeto/g&#39;</span> PyETo/pyeto/_check.py</code></pre>
+<p>Create the python script <code>pet.py</code> to calculate daily PET values for our multi-column SWAT files. And create the bash script <code>maca_pet.sh</code> to process multiple model-rcp combinations out of MACAv2-METDATA in parallel.</p>
+<p><strong><code>pet.py</code></strong></p>
+<pre class="sourceCode python"><code class="sourceCode python"><span class="co">#</span>
+<span class="co"># Calculate daily potential evapotranspiration</span>
+<span class="co">#</span>
+<span class="co"># Input files are the 9-column headerless, tab-delimited SWAT output </span>
+<span class="co"># files with columns:</span>
+<span class="co">#     day_of_year, year, tmax, tmin, tmean, pr, rhsmean, srad, wind</span>
+<span class="co">#</span>
+<span class="co"># Output files are tab-delimited, have headers, and 3 new columns:</span>
+<span class="co">#     pet (mm d-1), latitude (deg north), altitude (m)</span>
+<span class="co">#</span>
+<span class="co"># This script requires 1 or 3 command line arguments:</span>
+<span class="co">#    1. dataset (&quot;metdata&quot; or &quot;maca&quot; [for MACAv2-METDATA])</span>
+<span class="co">#    2. model (only for maca)</span>
+<span class="co">#    3. rcp (&quot;rcp45&quot; or &quot;rcp85&quot;; only for maca)</span>
+<span class="co">#</span>
+<span class="co"># It&#39;s setup to work with the PyETo repository cloned but not installed.</span>
+<span class="co"># Here are the steps:</span>
+<span class="co">#   git clone https://github.com/woodcrafty/PyETo</span>
+<span class="co">#   mv PyETo/pyeto/__init__.py PyETo/pyeto/__init__.py.bad</span>
+<span class="co">#   sed -i &#39;/from pyeto\.convert import/s/pyeto/PyETo.pyeto/g&#39; PyETo/pyeto/_check.py</span>
+<span class="co">#</span>
+
+<span class="ch">import</span> PyETo.pyeto.fao <span class="ch">as</span> pyeto
+<span class="ch">import</span> PyETo.pyeto.convert <span class="ch">as</span> conv
+<span class="ch">import</span> pandas <span class="ch">as</span> pd
+<span class="ch">import</span> sys
+<span class="ch">import</span> os
+
+huc_info = pd.read_csv(<span class="st">&#39;huc10_elevation_latitude.txt&#39;</span>, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, header=<span class="ot">None</span>)
+huc_info.columns = [<span class="st">&#39;huc_id&#39;</span>, <span class="st">&#39;altitude&#39;</span>, <span class="st">&#39;latitude&#39;</span>]
+
+maca_models = [<span class="st">&quot;bcc-csm1-1-m&quot;</span>, <span class="st">&quot;bcc-csm1-1&quot;</span>, <span class="st">&quot;BNU-ESM&quot;</span>, <span class="st">&quot;CanESM2&quot;</span>, 
+    <span class="co">&quot;CNRM-CM5&quot;</span>, <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span>, <span class="st">&quot;GFDL-ESM2G&quot;</span>, <span class="st">&quot;GFDL-ESM2M&quot;</span>, <span class="st">&quot;HadGEM2-CC365&quot;</span>, 
+    <span class="co">&quot;HadGEM2-ES365&quot;</span>, <span class="st">&quot;inmcm4&quot;</span>, <span class="st">&quot;IPSL-CM5A-LR&quot;</span>, <span class="st">&quot;IPSL-CM5A-MR&quot;</span>, <span class="st">&quot;IPSL-CM5B-LR&quot;</span>, 
+    <span class="co">&quot;MIROC-ESM-CHEM&quot;</span>, <span class="st">&quot;MIROC-ESM&quot;</span>, <span class="st">&quot;MIROC5&quot;</span>, <span class="st">&quot;MRI-CGCM3&quot;</span>]
+maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp85&#39;</span>]
+
+
+<span class="kw">def</span> convert_metdata():
+    input_file = <span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_SWAT2/</span><span class="ot">%d</span><span class="st">_SWAT.txt&#39;</span>
+    output_file = <span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project/</span><span class="ot">%d</span><span class="st">_SWAT.txt&#39;</span>
+    os.makedirs(<span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project&#39;</span>, exist_ok=<span class="ot">True</span>)
+    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;altitude&#39;</span>], input_file % x[<span class="st">&#39;huc_id&#39;</span>], output_file % x[<span class="st">&#39;huc_id&#39;</span>]), axis=<span class="dv">1</span>)
+
+
+<span class="kw">def</span> convert_maca(model, rcp):
+    input_file = <span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_SWAT2/</span><span class="ot">%s</span><span class="st">/</span><span class="ot">%d</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_SWAT.txt&#39;</span>
+    output_file = <span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/</span><span class="ot">%s</span><span class="st">/</span><span class="ot">%d</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_SWAT.txt&#39;</span>
+    os.makedirs(<span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/</span><span class="ot">%s</span><span class="st">&#39;</span> % model, exist_ok=<span class="ot">True</span>)
+    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;altitude&#39;</span>], input_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp), output_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp)), axis=<span class="dv">1</span>)
+
+
+<span class="kw">def</span> convert_file(latitude, altitude, input_file, output_file):
+
+    df=pd.read_csv(input_file, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, header=<span class="ot">None</span>)
+
+    df.columns = [<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>]
+
+    lat_rad = conv.deg2rad(latitude)
+    atmos_pres = pyeto.atm_pressure(altitude)
+    psy = pyeto.psy_const(atmos_pres)
+
+    df[<span class="st">&#39;tmaxk&#39;</span>] = df[<span class="st">&#39;tmax&#39;</span>]+<span class="fl">273.15</span>
+    df[<span class="st">&#39;tmink&#39;</span>] = df[<span class="st">&#39;tmin&#39;</span>]+<span class="fl">273.15</span>
+    df[<span class="st">&#39;tmeank&#39;</span>] = df[<span class="st">&#39;tmean&#39;</span>]+<span class="fl">273.15</span>
+
+    df[<span class="st">&#39;svp&#39;</span>] = df[<span class="st">&#39;tmean&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.svp_from_t(x))
+    df[<span class="st">&#39;svp_tmin&#39;</span>] = df[<span class="st">&#39;tmin&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.svp_from_t(x))
+    df[<span class="st">&#39;svp_tmax&#39;</span>] = df[<span class="st">&#39;tmax&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.svp_from_t(x))
+    df[<span class="st">&#39;avp&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.avp_from_rhmean(x[<span class="st">&#39;svp_tmin&#39;</span>], x[<span class="st">&#39;svp_tmax&#39;</span>], x[<span class="st">&#39;rhsmean&#39;</span>]), axis=<span class="dv">1</span>)
+    df[<span class="st">&#39;delta_svp&#39;</span>] = df[<span class="st">&#39;tmean&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.delta_svp(x))
+
+    <span class="co"># The srad value we have is daily mean in &quot;W m-2&quot; (=&quot;J m-2 s-1&quot;) </span>
+    <span class="co"># need to convert to &quot;MJ m-2 day-1&quot;</span>
+    <span class="co"># 1 day = 86400 seconds, so multiplying by 86400 gives &quot;J m-2 day-1&quot;</span>
+    <span class="co"># and dividing by 1000000 gives &quot;MJ m-2 day-1&quot;</span>
+    <span class="co"># so: srad * 86400 / 1000000 = srad * 0.0864</span>
+    df[<span class="st">&#39;sol_rad&#39;</span>] = df[<span class="st">&#39;srad&#39;</span>] * <span class="fl">0.0864</span>
+
+    df[<span class="st">&#39;sol_dec&#39;</span>] = df[<span class="st">&#39;day_of_year&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.sol_dec(x))
+    df[<span class="st">&#39;sha&#39;</span>] = df[<span class="st">&#39;sol_dec&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.sunset_hour_angle(lat_rad, x))
+    df[<span class="st">&#39;ird&#39;</span>] = df[<span class="st">&#39;day_of_year&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.inv_rel_dist_earth_sun(x))
+    df[<span class="st">&#39;et_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.et_rad(lat_rad, x[<span class="st">&#39;sol_dec&#39;</span>], x[<span class="st">&#39;sha&#39;</span>], x[<span class="st">&#39;ird&#39;</span>]), axis=<span class="dv">1</span>)
+    df[<span class="st">&#39;cs_rad&#39;</span>] = df[<span class="st">&#39;et_rad&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.cs_rad(altitude, x))
+    df[<span class="st">&#39;ni_sw_rad&#39;</span>] = df[<span class="st">&#39;sol_rad&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_in_sol_rad(x))
+    df[<span class="st">&#39;no_lw_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_out_lw_rad(x[<span class="st">&#39;tmeank&#39;</span>], x[<span class="st">&#39;tmaxk&#39;</span>], x[<span class="st">&#39;sol_rad&#39;</span>], x[<span class="st">&#39;cs_rad&#39;</span>], x[<span class="st">&#39;avp&#39;</span>]), axis=<span class="dv">1</span>)
+    df[<span class="st">&#39;net_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_rad(x[<span class="st">&#39;ni_sw_rad&#39;</span>], x[<span class="st">&#39;no_lw_rad&#39;</span>]), axis=<span class="dv">1</span>)
+    df[<span class="st">&#39;pet&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.fao56_penman_monteith(x[<span class="st">&#39;net_rad&#39;</span>], x[<span class="st">&#39;tmeank&#39;</span>], x[<span class="st">&#39;wind&#39;</span>], x[<span class="st">&#39;svp&#39;</span>], x[<span class="st">&#39;avp&#39;</span>], x[<span class="st">&#39;delta_svp&#39;</span>], psy), axis=<span class="dv">1</span>)
+
+    <span class="co"># Add latitude and altitude as columns in the dataframe</span>
+    df[<span class="st">&#39;latitude&#39;</span>] = <span class="st">&#39;</span><span class="ot">%.3f</span><span class="st">&#39;</span> % latitude
+    df[<span class="st">&#39;altitude&#39;</span>] = <span class="st">&#39;</span><span class="ot">%.1f</span><span class="st">&#39;</span> % altitude
+
+    <span class="co"># Reduce the dataframe to only the columns we want to save</span>
+    df = df[[<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>,<span class="st">&#39;pet&#39;</span>,<span class="st">&#39;latitude&#39;</span>,<span class="st">&#39;altitude&#39;</span>]]
+
+    <span class="co"># Save to an output file</span>
+    df.to_csv(output_file, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, index=<span class="ot">False</span>)
+
+
+
+
+<span class="co"># The &quot;main&quot; function</span>
+<span class="kw">if</span> sys.argv[<span class="dv">1</span>] == <span class="st">&#39;metdata&#39;</span>:
+    convert_metdata()
+<span class="kw">elif</span> sys.argv[<span class="dv">1</span>] == <span class="st">&#39;maca&#39;</span>:
+    model = sys.argv[<span class="dv">2</span>]
+    rcp = sys.argv[<span class="dv">3</span>]
+    convert_maca(model, rcp)</code></pre>
+<p><strong><code>maca_pet.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co"># Run pet.py for all the model-rcp combinations in MACAv2-METDATA</span>
+<span class="co"># that will be used in SWAT models.</span>
+
+<span class="co"># Skipping CCSM4 and NorESM1-M since these don&#39;t have relative humidity</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span>
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span>
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span>
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+  <span class="kw">for</span> <span class="kw">i</span> in 0 1 2<span class="kw">;</span> <span class="kw">do</span>
+    <span class="co"># run 6 model-rcp combinations in parallel</span>
+    <span class="kw">for</span> <span class="kw">j</span> in <span class="dt">{0..5}</span><span class="kw">;</span> <span class="kw">do</span>
+      <span class="ot">index=$((</span> <span class="ot">${j}</span> + <span class="ot">$((</span> <span class="ot">${i}</span> * 6 <span class="ot">))</span> <span class="ot">))</span>
+      <span class="kw">python</span> pet.py maca <span class="ot">${MODELS[${index}]}</span> <span class="ot">${rcp}</span> <span class="kw">&amp;</span>
+    <span class="kw">done</span>  <span class="co"># end j loop</span>
+    <span class="kw">wait</span> <span class="co"># wait for all 6 processes to finish before looping to the next 6</span>
+  <span class="kw">done</span>  <span class="co"># end i loop</span>
+<span class="kw">done</span>  <span class="co"># end rcp loop</span></code></pre>
+<p>Generate new SWAT files with PET for METDATA:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> python pet.py metdata</code></pre>
+<p>This took 71 minutes.</p>
+<p>Generate new SWAT files with PET for MACAv2-METDATA:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_pet.sh</code></pre>
+<p>This took 1044 minutes (17.4 hours).</p>
+<h1 id="awr-data-outputs">AWR Data Outputs</h1>
+<h2 id="modeled-data-from-macav2-metdata">Modeled data from MACAv2-METDATA</h2>
+<p>Coverage</p>
+<blockquote>
+<p><strong>Years:</strong> 2006-2099</p>
+</blockquote>
+<blockquote>
+<p><strong>RCPs:</strong> 4.5, 8.5</p>
+</blockquote>
+<blockquote>
+<p><strong>Models:</strong> bcc-csm1-1, bcc-csm1-1-m, BNU-ESM, CanESM2, CCSM4 (Envision netCDF only), CNRM-CM5, CSIRO-Mk3-6-0, GFDL-ESM2G, GFDL-ESM2M, HadGEM2-CC365, HadGEM2-ES365, inmcm4, IPSL-CM5A-LR, IPSL-CM5A-MR, IPSL-CM5B-LR, MIROC5, MIROC-ESM, MIROC-ESM-CHEM, MRI-CGCM3, NorESM1-M (Envision netCDF only)</p>
+</blockquote>
+<p>Yearly netCDF files for Envision can be found in <code>K:\datasets\MACA\MACAv2_Derived\AWR_Envision\{model}\yearly</code> (<code>/data/public/datasets/MACA/MACAv2_Derived/AWR_Envision/{model}/yearly</code>). They are named in the form <code>macav2metdata\_{variable}\_{model}\_{ensemble}\_{rcp}\_AWR\_daily\_{year}.nc</code>. (The ensemble is either &quot;r1i1p1&quot; or &quot;r6i1p1&quot;.) The total size of the yearly netCDF files <strong>for each model</strong> is about 201 GB.</p>
+<p>Single-column SWAT files can be found in <code>K:\datasets\MACA\MACAv2_Derived\AWR_SWAT\{model}\{huc10id}</code> (<code>/data/public/datasets/MACA/MACAv2_Derived/AWR_SWAT/{model}/{huc10id}</code>). They are named in the form <code>{huc10id}_{variable}_{rcp}.txt</code>. The total size of the single-column swat files <strong>for each model</strong> is about 3.6 GB.</p>
+<p>Multi-column SWAT files can be found in <code>K:\datasets\MACA\MACAv2_Derived\AWR_SWAT2\{model}</code> (<code>/data/public/datasets/MACA/MACAv2_Derived/AWR_SWAT2/{model}</code>). They are named in the form <code>{huc10id}_{model}_{rcp}_SWAT.txt</code>. The total size of the multi-column SWAT files <strong>for each model</strong> is about 2.9 GB.</p>
+<p>Multi-column SWAT files with PET can be found in <code>K:\datasets\MACA\MACAv2_Derived\AWR_Drought_Project\{model}</code> (<code>/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/{model}</code>). They are named in the form <code>{huc10id}_{model}_{rcp}_SWAT.txt</code>. The total size of these files <strong>for each model</strong> is about 4.8 GB.</p>
+<h2 id="observational-data-from-metdata">Observational data from METDATA</h2>
+<p>Coverage: January 1, 1979 - July 1, 2018</p>
+<p>Yearly netCDF files for Envision can be found in <code>K:\datasets\MACA\METDATA_Derived\AWR_Envision</code> (<code>/data/public/datasets/MACA/METDATA_Derived/AWR_Envision</code>). They are named in the form <code>{variable}_{year}.nc</code>. The total size of the yearly netCDF files is 47 GB.</p>
+<p>Single-column SWAT files can be found in <code>K:\datasets\MACA\METDATA_Derived\AWR_SWAT\{huc10id}</code> (<code>/data/public/datasets/MACA/METDATA_Derived/AWR_SWAT/{huc10id}</code>). They are named in the form <code>{huc10id}_{variable}.txt</code>. The total size of the single-column SWAT files is 795 MB.</p>
+<p>Multi-column SWAT files can be found in <code>K:\datasets\MACA\METDATA_Derived\AWR_SWAT2</code> (<code>/data/public/datasets/MACA/METDATA_Derived/AWR_SWAT2</code>). They are named in the form <code>{huc10id}_SWAT.txt</code>. The total size of the multi-column SWAT files is 607 MB.</p>
+<p>Multi-column SWAT files with PET can be found in <code>K:\datasets\MACA\METDATA_Derived\AWR_Drought_Project</code> (<code>/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project</code>). They are named in the form <code>{huc10id}_SWAT.txt</code>. The total size of these files is 1.1 GB.</p>
+<h2 id="variables">Variables</h2>
+<table>
+<thead>
+<tr class="header">
+<th align="left">Variable</th>
+<th align="left">Variable in filename (METDATA)</th>
+<th align="left">Variable in filename (MACAv2)</th>
+<th align="left">Variable name inside netCDF</th>
+<th align="left">Units</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Specific humidity</td>
+<td align="left">sph</td>
+<td align="left">huss</td>
+<td align="left">specific_humidity</td>
+<td align="left">kg kg<span class="math">\(^{-1}\)</span></td>
+</tr>
+<tr class="even">
+<td align="left">Relative humidity</td>
+<td align="left">rmean</td>
+<td align="left">rhsmean</td>
+<td align="left">relative_humidity</td>
+<td align="left">%</td>
+</tr>
+<tr class="odd">
+<td align="left">Solar radiation</td>
+<td align="left">srad</td>
+<td align="left">rsds</td>
+<td align="left">surface_downwelling_shortwave_flux_in_air</td>
+<td align="left">W m<span class="math">\(^{-2}\)</span></td>
+</tr>
+<tr class="even">
+<td align="left">Maximum temperature</td>
+<td align="left">tmmx</td>
+<td align="left">tasmax</td>
+<td align="left">air_temperature</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">Minimum temperature</td>
+<td align="left">tmmn</td>
+<td align="left">tasmin</td>
+<td align="left">air_temperature</td>
+<td align="left">°C</td>
+</tr>
+<tr class="even">
+<td align="left">Mean temperature</td>
+<td align="left">tmmean</td>
+<td align="left">tasmean</td>
+<td align="left">air_temperature</td>
+<td align="left">°C</td>
+</tr>
+<tr class="odd">
+<td align="left">Precipitation</td>
+<td align="left">pr</td>
+<td align="left">pr</td>
+<td align="left">precipitation</td>
+<td align="left">mm day<span class="math">\(^{-1}\)</span></td>
+</tr>
+<tr class="even">
+<td align="left">Wind</td>
+<td align="left">vs</td>
+<td align="left">wind</td>
+<td align="left">wind_speed</td>
+<td align="left">m s<span class="math">\(^{-1}\)</span></td>
+</tr>
+</tbody>
+</table>
+<h2 id="multi-column-swat-format">Multi-column SWAT format</h2>
+<p>The multi-column SWAT files are tab-delimited text files without column headers. The columns are: year, day_of_year, minimum_temperature, maximum_temperature, mean_temperature, precipitation, relative_humidity, solar_radiation, wind_speed. The year column is the dataset year rather than the calendar year; for METDATA 1=1979, 2=1980, etc; for MACAv2-METDATA 1=2006, 2=2007, etc. Units for the climate variables are the same as found in the Envision netCDF files and listed in the table above.</p>
+<pre class="sourceCode python"><code class="sourceCode python"></code></pre>
+</body>
+</html>

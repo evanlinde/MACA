@@ -28,79 +28,7 @@ code > span.fu { color: #06287e; }
 code > span.er { color: #ff0000; font-weight: bold; }
   </style>
   <link rel="stylesheet" href="doc/pandoc.css" type="text/css" />
-  <script type="text/javascript">/*<![CDATA[*/
-  /* 
-  March 19, 2004 MathHTML (c) Peter Jipsen http://www.chapman.edu/~jipsen
-  Released under the GNU General Public License version 2 or later.
-  See the GNU General Public License (at http://www.gnu.org/copyleft/gpl.html)
-  for more details.
-  */
-  
-  function convertMath(node) {// for Gecko
-    if (node.nodeType==1) {
-      var newnode = 
-        document.createElementNS("http://www.w3.org/1998/Math/MathML",
-          node.nodeName.toLowerCase());
-      for(var i=0; i < node.attributes.length; i++)
-        newnode.setAttribute(node.attributes[i].nodeName,
-          node.attributes[i].nodeValue);
-      for (var i=0; i<node.childNodes.length; i++) {
-        var st = node.childNodes[i].nodeValue;
-        if (st==null || st.slice(0,1)!=" " && st.slice(0,1)!="\n") 
-          newnode.appendChild(convertMath(node.childNodes[i]));
-      }
-      return newnode;
-    }
-    else return node;
-  }
-  
-  function convert() {
-    var mmlnode = document.getElementsByTagName("math");
-    var st,str,node,newnode;
-    for (var i=0; i<mmlnode.length; i++)
-      if (document.createElementNS!=null)
-        mmlnode[i].parentNode.replaceChild(convertMath(mmlnode[i]),mmlnode[i]);
-      else { // convert for IE
-        str = "";
-        node = mmlnode[i];
-        while (node.nodeName!="/MATH") {
-          st = node.nodeName.toLowerCase();
-          if (st=="#text") str += node.nodeValue;
-          else {
-            str += (st.slice(0,1)=="/" ? "</m:"+st.slice(1) : "<m:"+st);
-            if (st.slice(0,1)!="/") 
-               for(var j=0; j < node.attributes.length; j++)
-                 if (node.attributes[j].nodeValue!="italic" &&
-                   node.attributes[j].nodeValue!="" &&
-                   node.attributes[j].nodeValue!="inherit" &&
-                   node.attributes[j].nodeValue!=undefined)
-                   str += " "+node.attributes[j].nodeName+"="+
-                       "\""+node.attributes[j].nodeValue+"\"";
-            str += ">";
-          }
-          node = node.nextSibling;
-          node.parentNode.removeChild(node.previousSibling);
-        }
-        str += "</m:math>";
-        newnode = document.createElement("span");
-        node.parentNode.replaceChild(newnode,node);
-        newnode.innerHTML = str;
-      }
-  }
-  
-  if (document.createElementNS==null) {
-    document.write("<object id=\"mathplayer\"\
-    classid=\"clsid:32F66A20-7614-11D4-BD11-00104BD3F987\"></object>");
-    document.write("<?import namespace=\"m\" implementation=\"#mathplayer\"?>");
-  }
-  if(typeof window.addEventListener != 'undefined'){
-    window.addEventListener('load', convert, false);
-  }
-  if(typeof window.attachEvent != 'undefined') {
-    window.attachEvent('onload', convert);
-  }
-  /*]]>*/
-  </script>
+  <script src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML" type="text/javascript"></script>
 </head>
 <body>
 <div id="header">
@@ -678,19 +606,19 @@ bcc-csm1-1-m/macav2metdata_tasmax_bcc-csm1-1-m_r1i1p1_rcp85_2026_2030_CONUS_dail
 </tr>
 <tr class="even">
 <td align="left">solar radiation</td>
-<td align="left">W m<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>2</mn></mrow></msup></mrow></math></td>
+<td align="left">W m<span class="math">\(^{-2}\)</span></td>
 </tr>
 <tr class="odd">
 <td align="left">specific humidity</td>
-<td align="left">kg kg<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow></math></td>
+<td align="left">kg kg<span class="math">\(^{-1}\)</span></td>
 </tr>
 <tr class="even">
 <td align="left">wind speed</td>
-<td align="left">m s<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow></math></td>
+<td align="left">m s<span class="math">\(^{-1}\)</span></td>
 </tr>
 <tr class="odd">
 <td align="left">precipitation</td>
-<td align="left">mm day<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow></math></td>
+<td align="left">mm day<span class="math">\(^{-1}\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -751,7 +679,7 @@ ncatted -a units,air_temperature,o,c,&#39;C&#39; infile.nc [outfile.nc]</code></
 <pre><code>nces tasmax.nc tasmin.nc tasmean.nc
 ncatted -a cell_methods,air_temperature,o,c,&#39;time: mean(interval: 24 hours)&#39; -a long_name,air_temperature,o,c,&#39;Daily Mean Near-Surface Air Temperature&#39; tasmean.nc</code></pre>
 <p><strong>Producing wind speed netCDF</strong></p>
-<p>The wind information provided in MACAv2-METDATA is split into two vectors: <code>northward_wind</code> in the <code>vas</code> files and <code>eastward_wind</code> in the <code>uas</code> files. We can use the familiar <a href="https://en.wikipedia.org/wiki/Pythagorean_theorem">Pythagorean theorem</a>, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>c</mi><mo>=</mo><msqrt><mrow><msup><mi>a</mi><mn>2</mn></msup><mo>+</mo><msup><mi>b</mi><mn>2</mn></msup></mrow></msqrt></mrow></math>, to calculate wind speed, <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>c</mi></mrow></math>, by assigning the northward and eastward wind vectors to <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi></mrow></math> and <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>b</mi></mrow></math>.</p>
+<p>The wind information provided in MACAv2-METDATA is split into two vectors: <code>northward_wind</code> in the <code>vas</code> files and <code>eastward_wind</code> in the <code>uas</code> files. We can use the familiar <a href="https://en.wikipedia.org/wiki/Pythagorean_theorem">Pythagorean theorem</a>, <span class="math">\(c = \sqrt{a^2 + b^2}\)</span>, to calculate wind speed, <span class="math">\(c\)</span>, by assigning the northward and eastward wind vectors to <span class="math">\(a\)</span> and <span class="math">\(b\)</span>.</p>
 <p>The procedure we followed to do this involved several steps and multiple NCO commands. We used the <code>ncks</code> command to append and extract variables, the <code>ncap2</code> command for the actual math, and the <code>ncatted</code> command to update metadata.</p>
 <p>Step 1: Copy one of the files because we'll end up modifying it directly</p>
 <pre><code>cp vas.nc temporary_vas.nc</code></pre>
@@ -1069,7 +997,7 @@ ncatted -a cell_methods,air_temperature,o,c,&#39;time: mean(interval: 24 hours)&
 </tr>
 <tr class="odd">
 <td align="left">solar radiation</td>
-<td align="left">W m<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>2</mn></mrow></msup></mrow></math></td>
+<td align="left">W m<span class="math">\(^{-2}\)</span></td>
 </tr>
 <tr class="even">
 <td align="left">relative humidity</td>
@@ -1077,11 +1005,11 @@ ncatted -a cell_methods,air_temperature,o,c,&#39;time: mean(interval: 24 hours)&
 </tr>
 <tr class="odd">
 <td align="left">wind speed</td>
-<td align="left">m s<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow></math></td>
+<td align="left">m s<span class="math">\(^{-1}\)</span></td>
 </tr>
 <tr class="even">
 <td align="left">precipitation</td>
-<td align="left">mm day<math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><msup><mi></mi><mrow><mo>−</mo><mn>1</mn></mrow></msup></mrow></math></td>
+<td align="left">mm day<span class="math">\(^{-1}\)</span></td>
 </tr>
 </tbody>
 </table>
@@ -1993,7 +1921,7 @@ points = np.loadtxt(point_file)
 <span class="kw">fi</span></code></pre>
 <h2 id="useful-services">Useful Services</h2>
 <p>We could have used existing services to make subsets rather than downloading entire datasets. If we hadn't had sufficient free space available (about 12.5 TB for the unmodified originals, plus almost 1 TB for subsets and converted data so far), this would have been a necessity rather than a choice.</p>
-<p>If using any of these subset services for METDATA or MACAv2-METDATA and you don't already know the closest coordinates to your shapefile boundary, a good rule of thumb would be to add or subtract 0.05 (depending on direction) from the shapefile's boundary coordinates. This will be sufficient to cover the shapefile and shouldn't get you more than an extra column or row of cells than you need in each direction. (Remember that the cell size is <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mfrac><mn>1</mn><mn>24</mn></mfrac></mrow></math> degree; i.e. <math display="inline" xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mn>0</mn><mo>.</mo><mn>041</mn><mover><mn>6</mn><mo accent="true">¯</mo></mover></mrow></math>.)</p>
+<p>If using any of these subset services for METDATA or MACAv2-METDATA and you don't already know the closest coordinates to your shapefile boundary, a good rule of thumb would be to add or subtract 0.05 (depending on direction) from the shapefile's boundary coordinates. This will be sufficient to cover the shapefile and shouldn't get you more than an extra column or row of cells than you need in each direction. (Remember that the cell size is <span class="math">\(\frac{1}{24}\)</span> degree; i.e. <span class="math">\(0.041\overline{6}\)</span>.)</p>
 <h3 id="maca-data-portal">MACA Data Portal</h3>
 <p>On MACA's <a href="https://climate.northwestknowledge.net/MACA/data_portal.php">data portal</a> under the domain option, you can choose a rectangular subset and enter your own coordinates (best to add a little padding as mentioned above). Then download a bash script of <code>curl</code> or <code>wget</code> commands that you can run to download all the matching files.</p>
 <p>Note that for the time period, you may see the option to choose the full range of years in a single file (for each model, rcp, and variable combination). This may work very well if your subset is small, but may give you trouble with some of the NCO operations. (Some NCO operations require enough available RAM to accommodate the size of the file(s) involved, but I don't recall if this includes anything we've demonstrated here.) More clicking is involved, but it's also possible to choose each of the year blocks instead of a monolithic range, resulting in a subset comparable to what we started with when converting data for Envision.</p>

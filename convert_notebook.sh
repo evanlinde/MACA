@@ -70,6 +70,9 @@ rm ${file_basename}.md
 
 # Make HTML page
 pandoc -f markdown_github+tex_math_dollars+yaml_metadata_block doc/${file_basename}.md --css doc/pandoc.css --toc -s --mathjax -o ${file_basename}.html
+# Load mathjax over https instead of http
+sed -i 's,http://cdn.mathjax.org,https://cdn.mathjax.org,g' ${file_basename}.html
+
 
 # Only make PDFs for some documents
 if [[ ${pdf[${file_basename}]} -eq 1 ]]; then

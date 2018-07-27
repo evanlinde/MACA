@@ -8,3 +8,5 @@ The Jupyter (formerly IPython) notebook [MACA_to_Envision_SWAT.ipynb](MACA_to_En
 An HTML export of the notebook is available at [MACA_to_Envision_SWAT.html](MACA_to_Envision_SWAT.html) for easy viewing in a browser and I've made a couple PDFs because the notebook and the HTML version aren't well-suited for printing ([PDF 1](doc/MACA_to_Envision_SWAT.pdf), [PDF 2](doc/MACA_to_Envision_SWAT_small_margins.pdf)).
 
 Scripts used for data conversion are in the *dataset*\_Derived directories.
+
+Documentation for the Arkansas-White-Red (AWR) river basin study area is available at [AWR.html](AWR.html); the original Jupyter notebook is at [AWR.ipynb](AWR.ipynb).

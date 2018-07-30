@@ -1527,7 +1527,7 @@ Create the python script `pet.py` to calculate daily PET values for our multi-co
 #     day_of_year, year, tmax, tmin, tmean, pr, rhsmean, srad, wind
 #
 # Output files are tab-delimited, have headers, and 3 new columns:
-#     pet (mm d-1), latitude (deg north), altitude (m)
+#     pet (mm d-1), latitude (deg north), elevation (m)
 #
 # This script requires 1 or 3 command line arguments:
 #    1. dataset ("metdata" or "maca" [for MACAv2-METDATA])
@@ -1548,7 +1548,7 @@ import sys
 import os
 
 huc_info = pd.read_csv('huc10_elevation_latitude.txt', sep='\t', header=None)
-huc_info.columns = ['huc_id', 'altitude', 'latitude']
+huc_info.columns = ['huc_id', 'elevation', 'latitude']
 
 maca_models = ["bcc-csm1-1-m", "bcc-csm1-1", "BNU-ESM", "CanESM2", 
     "CNRM-CM5", "CSIRO-Mk3-6-0", "GFDL-ESM2G", "GFDL-ESM2M", "HadGEM2-CC365", 
@@ -1561,24 +1561,24 @@ def convert_metdata():
     input_file = '/data/public/datasets/MACA/METDATA_Derived/AWR_SWAT2/%d_SWAT.txt'
     output_file = '/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project/%d_SWAT.txt'
     os.makedirs('/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project', exist_ok=True)
-    huc_info.apply(lambda x: convert_file(x['latitude'], x['altitude'], input_file % x['huc_id'], output_file % x['huc_id']), axis=1)
+    huc_info.apply(lambda x: convert_file(x['latitude'], x['elevation'], input_file % x['huc_id'], output_file % x['huc_id']), axis=1)
 
 
 def convert_maca(model, rcp):
     input_file = '/data/public/datasets/MACA/MACAv2_Derived/AWR_SWAT2/%s/%d_%s_%s_SWAT.txt'
     output_file = '/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/%s/%d_%s_%s_SWAT.txt'
     os.makedirs('/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/%s' % model, exist_ok=True)
-    huc_info.apply(lambda x: convert_file(x['latitude'], x['altitude'], input_file % (model, x['huc_id'], model, rcp), output_file % (model, x['huc_id'], model, rcp)), axis=1)
+    huc_info.apply(lambda x: convert_file(x['latitude'], x['elevation'], input_file % (model, x['huc_id'], model, rcp), output_file % (model, x['huc_id'], model, rcp)), axis=1)
 
 
-def convert_file(latitude, altitude, input_file, output_file):
+def convert_file(latitude, elevation, input_file, output_file):
 
     df=pd.read_csv(input_file, sep='\t', header=None)
 
-    df.columns = ['day_of_year','year','tmax','tmin','tmean','pr','rhsmean','srad','wind']
+    df.columns = ['year','day_of_year','tmax','tmin','tmean','pr','rhsmean','srad','wind']
 
     lat_rad = conv.deg2rad(latitude)
-    atmos_pres = pyeto.atm_pressure(altitude)
+    atmos_pres = pyeto.atm_pressure(elevation)
     psy = pyeto.psy_const(atmos_pres)
 
     df['tmaxk'] = df['tmax']+273.15
@@ -1602,18 +1602,18 @@ def convert_file(latitude, altitude, input_file, output_file):
     df['sha'] = df['sol_dec'].apply(lambda x: pyeto.sunset_hour_angle(lat_rad, x))
     df['ird'] = df['day_of_year'].apply(lambda x: pyeto.inv_rel_dist_earth_sun(x))
     df['et_rad'] = df.apply(lambda x: pyeto.et_rad(lat_rad, x['sol_dec'], x['sha'], x['ird']), axis=1)
-    df['cs_rad'] = df['et_rad'].apply(lambda x: pyeto.cs_rad(altitude, x))
+    df['cs_rad'] = df['et_rad'].apply(lambda x: pyeto.cs_rad(elevation, x))
     df['ni_sw_rad'] = df['sol_rad'].apply(lambda x: pyeto.net_in_sol_rad(x))
     df['no_lw_rad'] = df.apply(lambda x: pyeto.net_out_lw_rad(x['tmeank'], x['tmaxk'], x['sol_rad'], x['cs_rad'], x['avp']), axis=1)
     df['net_rad'] = df.apply(lambda x: pyeto.net_rad(x['ni_sw_rad'], x['no_lw_rad']), axis=1)
     df['pet'] = df.apply(lambda x: pyeto.fao56_penman_monteith(x['net_rad'], x['tmeank'], x['wind'], x['svp'], x['avp'], x['delta_svp'], psy), axis=1)
 
-    # Add latitude and altitude as columns in the dataframe
+    # Add latitude and elevation as columns in the dataframe
     df['latitude'] = '%.3f' % latitude
-    df['altitude'] = '%.1f' % altitude
+    df['elevation'] = '%.1f' % elevation
 
     # Reduce the dataframe to only the columns we want to save
-    df = df[['day_of_year','year','tmax','tmin','tmean','pr','rhsmean','srad','wind','pet','latitude','altitude']]
+    df = df[['year','day_of_year','tmax','tmin','tmean','pr','rhsmean','srad','wind','pet','latitude','elevation']]
 
     # Save to an output file
     df.to_csv(output_file, sep='\t', index=False)

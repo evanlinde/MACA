@@ -1332,7 +1332,7 @@ clim_vars = {<span class="st">&#39;tmmean&#39;</span>:<span class="st">&#39;air_
 <span class="co">#     day_of_year, year, tmax, tmin, tmean, pr, rhsmean, srad, wind</span>
 <span class="co">#</span>
 <span class="co"># Output files are tab-delimited, have headers, and 3 new columns:</span>
-<span class="co">#     pet (mm d-1), latitude (deg north), altitude (m)</span>
+<span class="co">#     pet (mm d-1), latitude (deg north), elevation (m)</span>
 <span class="co">#</span>
 <span class="co"># This script requires 1 or 3 command line arguments:</span>
 <span class="co">#    1. dataset (&quot;metdata&quot; or &quot;maca&quot; [for MACAv2-METDATA])</span>
@@ -1353,7 +1353,7 @@ clim_vars = {<span class="st">&#39;tmmean&#39;</span>:<span class="st">&#39;air_
 <span class="ch">import</span> os
 
 huc_info = pd.read_csv(<span class="st">&#39;huc10_elevation_latitude.txt&#39;</span>, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, header=<span class="ot">None</span>)
-huc_info.columns = [<span class="st">&#39;huc_id&#39;</span>, <span class="st">&#39;altitude&#39;</span>, <span class="st">&#39;latitude&#39;</span>]
+huc_info.columns = [<span class="st">&#39;huc_id&#39;</span>, <span class="st">&#39;elevation&#39;</span>, <span class="st">&#39;latitude&#39;</span>]
 
 maca_models = [<span class="st">&quot;bcc-csm1-1-m&quot;</span>, <span class="st">&quot;bcc-csm1-1&quot;</span>, <span class="st">&quot;BNU-ESM&quot;</span>, <span class="st">&quot;CanESM2&quot;</span>, 
     <span class="co">&quot;CNRM-CM5&quot;</span>, <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span>, <span class="st">&quot;GFDL-ESM2G&quot;</span>, <span class="st">&quot;GFDL-ESM2M&quot;</span>, <span class="st">&quot;HadGEM2-CC365&quot;</span>, 
@@ -1366,24 +1366,24 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
     input_file = <span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_SWAT2/</span><span class="ot">%d</span><span class="st">_SWAT.txt&#39;</span>
     output_file = <span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project/</span><span class="ot">%d</span><span class="st">_SWAT.txt&#39;</span>
     os.makedirs(<span class="st">&#39;/data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project&#39;</span>, exist_ok=<span class="ot">True</span>)
-    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;altitude&#39;</span>], input_file % x[<span class="st">&#39;huc_id&#39;</span>], output_file % x[<span class="st">&#39;huc_id&#39;</span>]), axis=<span class="dv">1</span>)
+    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;elevation&#39;</span>], input_file % x[<span class="st">&#39;huc_id&#39;</span>], output_file % x[<span class="st">&#39;huc_id&#39;</span>]), axis=<span class="dv">1</span>)
 
 
 <span class="kw">def</span> convert_maca(model, rcp):
     input_file = <span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_SWAT2/</span><span class="ot">%s</span><span class="st">/</span><span class="ot">%d</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_SWAT.txt&#39;</span>
     output_file = <span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/</span><span class="ot">%s</span><span class="st">/</span><span class="ot">%d</span><span class="st">_</span><span class="ot">%s</span><span class="st">_</span><span class="ot">%s</span><span class="st">_SWAT.txt&#39;</span>
     os.makedirs(<span class="st">&#39;/data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project/</span><span class="ot">%s</span><span class="st">&#39;</span> % model, exist_ok=<span class="ot">True</span>)
-    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;altitude&#39;</span>], input_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp), output_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp)), axis=<span class="dv">1</span>)
+    huc_info.<span class="dt">apply</span>(<span class="kw">lambda</span> x: convert_file(x[<span class="st">&#39;latitude&#39;</span>], x[<span class="st">&#39;elevation&#39;</span>], input_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp), output_file % (model, x[<span class="st">&#39;huc_id&#39;</span>], model, rcp)), axis=<span class="dv">1</span>)
 
 
-<span class="kw">def</span> convert_file(latitude, altitude, input_file, output_file):
+<span class="kw">def</span> convert_file(latitude, elevation, input_file, output_file):
 
     df=pd.read_csv(input_file, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, header=<span class="ot">None</span>)
 
-    df.columns = [<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>]
+    df.columns = [<span class="st">&#39;year&#39;</span>,<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>]
 
     lat_rad = conv.deg2rad(latitude)
-    atmos_pres = pyeto.atm_pressure(altitude)
+    atmos_pres = pyeto.atm_pressure(elevation)
     psy = pyeto.psy_const(atmos_pres)
 
     df[<span class="st">&#39;tmaxk&#39;</span>] = df[<span class="st">&#39;tmax&#39;</span>]+<span class="fl">273.15</span>
@@ -1407,18 +1407,18 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
     df[<span class="st">&#39;sha&#39;</span>] = df[<span class="st">&#39;sol_dec&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.sunset_hour_angle(lat_rad, x))
     df[<span class="st">&#39;ird&#39;</span>] = df[<span class="st">&#39;day_of_year&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.inv_rel_dist_earth_sun(x))
     df[<span class="st">&#39;et_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.et_rad(lat_rad, x[<span class="st">&#39;sol_dec&#39;</span>], x[<span class="st">&#39;sha&#39;</span>], x[<span class="st">&#39;ird&#39;</span>]), axis=<span class="dv">1</span>)
-    df[<span class="st">&#39;cs_rad&#39;</span>] = df[<span class="st">&#39;et_rad&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.cs_rad(altitude, x))
+    df[<span class="st">&#39;cs_rad&#39;</span>] = df[<span class="st">&#39;et_rad&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.cs_rad(elevation, x))
     df[<span class="st">&#39;ni_sw_rad&#39;</span>] = df[<span class="st">&#39;sol_rad&#39;</span>].<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_in_sol_rad(x))
     df[<span class="st">&#39;no_lw_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_out_lw_rad(x[<span class="st">&#39;tmeank&#39;</span>], x[<span class="st">&#39;tmaxk&#39;</span>], x[<span class="st">&#39;sol_rad&#39;</span>], x[<span class="st">&#39;cs_rad&#39;</span>], x[<span class="st">&#39;avp&#39;</span>]), axis=<span class="dv">1</span>)
     df[<span class="st">&#39;net_rad&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.net_rad(x[<span class="st">&#39;ni_sw_rad&#39;</span>], x[<span class="st">&#39;no_lw_rad&#39;</span>]), axis=<span class="dv">1</span>)
     df[<span class="st">&#39;pet&#39;</span>] = df.<span class="dt">apply</span>(<span class="kw">lambda</span> x: pyeto.fao56_penman_monteith(x[<span class="st">&#39;net_rad&#39;</span>], x[<span class="st">&#39;tmeank&#39;</span>], x[<span class="st">&#39;wind&#39;</span>], x[<span class="st">&#39;svp&#39;</span>], x[<span class="st">&#39;avp&#39;</span>], x[<span class="st">&#39;delta_svp&#39;</span>], psy), axis=<span class="dv">1</span>)
 
-    <span class="co"># Add latitude and altitude as columns in the dataframe</span>
+    <span class="co"># Add latitude and elevation as columns in the dataframe</span>
     df[<span class="st">&#39;latitude&#39;</span>] = <span class="st">&#39;</span><span class="ot">%.3f</span><span class="st">&#39;</span> % latitude
-    df[<span class="st">&#39;altitude&#39;</span>] = <span class="st">&#39;</span><span class="ot">%.1f</span><span class="st">&#39;</span> % altitude
+    df[<span class="st">&#39;elevation&#39;</span>] = <span class="st">&#39;</span><span class="ot">%.1f</span><span class="st">&#39;</span> % elevation
 
     <span class="co"># Reduce the dataframe to only the columns we want to save</span>
-    df = df[[<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>,<span class="st">&#39;pet&#39;</span>,<span class="st">&#39;latitude&#39;</span>,<span class="st">&#39;altitude&#39;</span>]]
+    df = df[[<span class="st">&#39;year&#39;</span>,<span class="st">&#39;day_of_year&#39;</span>,<span class="st">&#39;tmax&#39;</span>,<span class="st">&#39;tmin&#39;</span>,<span class="st">&#39;tmean&#39;</span>,<span class="st">&#39;pr&#39;</span>,<span class="st">&#39;rhsmean&#39;</span>,<span class="st">&#39;srad&#39;</span>,<span class="st">&#39;wind&#39;</span>,<span class="st">&#39;pet&#39;</span>,<span class="st">&#39;latitude&#39;</span>,<span class="st">&#39;elevation&#39;</span>]]
 
     <span class="co"># Save to an output file</span>
     df.to_csv(output_file, sep=<span class="st">&#39;</span><span class="ch">\t</span><span class="st">&#39;</span>, index=<span class="ot">False</span>)

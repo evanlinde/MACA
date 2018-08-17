@@ -64,6 +64,10 @@ code > span.er { color: #ff0000; font-weight: bold; }
 <li><a href="#converting-for-swat-models-1">Converting for SWAT Models</a></li>
 </ul></li>
 <li><a href="#calculating-potential-evapotranspiration">Calculating Potential Evapotranspiration</a></li>
+<li><a href="#additional-columns">Additional Columns</a><ul>
+<li><a href="#metdata-1">METDATA</a></li>
+<li><a href="#macav2-metdata-1">MACAv2-METDATA</a></li>
+</ul></li>
 <li><a href="#awr-data-outputs">AWR Data Outputs</a><ul>
 <li><a href="#modeled-data-from-macav2-metdata">Modeled data from MACAv2-METDATA</a></li>
 <li><a href="#observational-data-from-metdata">Observational data from METDATA</a></li>
@@ -1462,6 +1466,104 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 <p>Generate new SWAT files with PET for MACAv2-METDATA:</p>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_pet.sh</code></pre>
 <p>This took 1044 minutes (17.4 hours).</p>
+<h1 id="additional-columns">Additional Columns</h1>
+<p>We were requested to add three columns, into all the files in the <code>AWR_Drought_Project</code> folders. The column names are SS, SWC, and FC; their values should be 25, 150, and 30 in every line.</p>
+<h3 id="metdata-1">METDATA</h3>
+<p>Create a script to add the columns to the METDATA files:</p>
+<p><strong><code>metdata_AWR_SS_SWC_FC.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Add columns SS, SWC, and FC (with values 25, 150, and 30) to the </span>
+<span class="co"># multi-column files in AWR_Drought_Project.</span>
+<span class="co">#</span>
+
+<span class="kw">cd</span> /data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project
+
+<span class="kw">source</span> ../huc10_ids.sh
+
+<span class="co"># Write temp files in RAM</span>
+<span class="ot">T=$(</span><span class="kw">mktemp</span> -d --tmpdir=/dev/shm<span class="ot">)</span>
+
+<span class="co"># Create appropriate length columns SS, SWC, and FC</span>
+<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_swc_fc.txt&quot;</span>
+<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tSWC\tFC\n&quot;);for(i=1;i&lt;14428;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
+
+<span class="ot">procs=</span>0
+<span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+  <span class="co"># Background the process so we don&#39;t have to wait for it to finish</span>
+  <span class="co"># before starting the next one.</span>
+  <span class="ot">f=</span><span class="st">&quot;</span><span class="ot">${h}</span><span class="st">_SWAT.txt&quot;</span>
+  <span class="kw">paste</span> <span class="ot">${f}</span> <span class="ot">${newcols}</span> <span class="kw">&gt;</span> <span class="ot">${T}</span>/<span class="ot">${f}</span> <span class="kw">&amp;&amp;</span> <span class="kw">mv</span> -f <span class="ot">${T}</span>/<span class="ot">${f}</span> <span class="ot">${f}</span> <span class="kw">&amp;</span>
+  <span class="ot">procs=$((</span> <span class="ot">${procs}</span> + 1 <span class="ot">))</span>
+  <span class="co"># Don&#39;t start too many backgrounded processes at once</span>
+  <span class="kw">if [[</span> <span class="ot">${procs}</span> <span class="ot">-eq</span> 8<span class="kw"> ]]</span>; <span class="kw">then</span>
+    <span class="kw">wait</span>
+    <span class="ot">procs=</span>0
+  <span class="kw">fi</span>
+<span class="kw">done</span>
+
+<span class="co"># wait for any lingering processes to finish</span>
+<span class="kw">wait</span>
+
+<span class="kw">rm</span> -rf <span class="ot">${T}</span></code></pre>
+<p>Run the script:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">bash</span> metdata_AWR_SS_SWC_FC.sh</code></pre>
+<p>This took about a minute.</p>
+<h3 id="macav2-metdata-1">MACAv2-METDATA</h3>
+<p>Create a script to add the columns to the MACAv2-METDATA files:</p>
+<p><strong><code>maca_AWR_SS_SWC_FC.sh</code></strong></p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
+<span class="co">#</span>
+<span class="co"># Add columns SS, SWC, and FC (with values 25, 150, and 30) to the </span>
+<span class="co"># multi-column files in AWR_Drought_Project.</span>
+<span class="co">#</span>
+
+<span class="co"># Skipping CCSM4 and NorESM1-M since these don&#39;t have relative humidity</span>
+<span class="ot">MODELS=(</span><span class="st">&quot;bcc-csm1-1-m&quot;</span> <span class="st">&quot;bcc-csm1-1&quot;</span> <span class="st">&quot;BNU-ESM&quot;</span> <span class="st">&quot;CanESM2&quot;</span> <span class="st">&quot;CNRM-CM5&quot;</span>
+    <span class="st">&quot;CSIRO-Mk3-6-0&quot;</span> <span class="st">&quot;GFDL-ESM2G&quot;</span> <span class="st">&quot;GFDL-ESM2M&quot;</span> <span class="st">&quot;HadGEM2-CC365&quot;</span> <span class="st">&quot;HadGEM2-ES365&quot;</span>
+    <span class="st">&quot;inmcm4&quot;</span> <span class="st">&quot;IPSL-CM5A-LR&quot;</span> <span class="st">&quot;IPSL-CM5A-MR&quot;</span> <span class="st">&quot;IPSL-CM5B-LR&quot;</span> <span class="st">&quot;MIROC-ESM-CHEM&quot;</span>
+    <span class="st">&quot;MIROC-ESM&quot;</span> <span class="st">&quot;MIROC5&quot;</span> <span class="st">&quot;MRI-CGCM3&quot;</span>)
+
+<span class="ot">RCPS=(</span><span class="st">&quot;rcp45&quot;</span> <span class="st">&quot;rcp85&quot;</span><span class="ot">)</span>
+
+<span class="kw">cd</span> /data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project
+
+<span class="kw">source</span> ../huc10_ids.sh
+
+<span class="co"># Write temp files in RAM</span>
+<span class="ot">T=$(</span><span class="kw">mktemp</span> -d --tmpdir=/dev/shm<span class="ot">)</span>
+
+<span class="co"># Create appropriate length columns SS, SWC, and FC</span>
+<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_swc_fc.txt&quot;</span>
+<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tSWC\tFC\n&quot;);for(i=1;i&lt;34334;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
+
+<span class="ot">procs=</span>0
+<span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+  <span class="kw">pushd</span> <span class="ot">${model}</span>
+  <span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+    <span class="kw">for</span> <span class="kw">rcp</span> in <span class="ot">${RCPS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
+      <span class="co"># Background the process so we don&#39;t have to wait for it to finish</span>
+      <span class="co"># before starting the next one.</span>
+      <span class="ot">f=${h}</span>_<span class="ot">${model}</span>_<span class="ot">${rcp}</span>_SWAT.txt 
+      <span class="kw">paste</span> <span class="ot">${f}</span> <span class="ot">${newcols}</span> <span class="kw">&gt;</span> <span class="ot">${T}</span>/<span class="ot">${f}</span> <span class="kw">&amp;&amp;</span> <span class="kw">mv</span> -f <span class="ot">${T}</span>/<span class="ot">${f}</span> <span class="ot">${f}</span> <span class="kw">&amp;</span>
+      <span class="ot">procs=$((</span> <span class="ot">${procs}</span> + 1 <span class="ot">))</span>
+      <span class="co"># Don&#39;t start too many backgrounded processes at once</span>
+      <span class="kw">if [[</span> <span class="ot">${procs}</span> <span class="ot">-eq</span> 8<span class="kw"> ]]</span>; <span class="kw">then</span>
+        <span class="kw">wait</span>
+        <span class="ot">procs=</span>0
+      <span class="kw">fi</span>
+    <span class="kw">done</span>  <span class="co"># end rcp loop</span>
+  <span class="kw">done</span>  <span class="co"># end huc_id loop</span>
+  <span class="kw">popd</span>
+<span class="kw">done</span>  <span class="co"># end model loop</span>
+
+<span class="co"># wait for any lingering processes to finish</span>
+<span class="kw">wait</span>
+
+<span class="kw">rm</span> -rf <span class="ot">${T}</span></code></pre>
+<p>Run the script:</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_AWR_SS_SWC_FC.sh</code></pre>
+<p>This took 64 minutes.</p>
 <h1 id="awr-data-outputs">AWR Data Outputs</h1>
 <h2 id="modeled-data-from-macav2-metdata">Modeled data from MACAv2-METDATA</h2>
 <p>Coverage</p>

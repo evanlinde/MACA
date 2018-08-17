@@ -1675,6 +1675,124 @@ time bash maca_pet.sh
 
 This took 1044 minutes (17.4 hours).
 
+# Additional Columns
+
+We were requested to add three columns, into all the files in the `AWR_Drought_Project` folders. The column names are SS, SWC, and FC; their values should be 25, 150, and 30 in every line.
+
+### METDATA
+
+Create a script to add the columns to the METDATA files:
+
+**`metdata_AWR_SS_SWC_FC.sh`**
+```bash
+#!/bin/bash
+#
+# Add columns SS, SWC, and FC (with values 25, 150, and 30) to the 
+# multi-column files in AWR_Drought_Project.
+#
+
+cd /data/public/datasets/MACA/METDATA_Derived/AWR_Drought_Project
+
+source ../huc10_ids.sh
+
+# Write temp files in RAM
+T=$(mktemp -d --tmpdir=/dev/shm)
+
+# Create appropriate length columns SS, SWC, and FC
+newcols="${T}/ss_swc_fc.txt"
+echo "" | awk 'END{str=sprintf("SS\tSWC\tFC\n");for(i=1;i<14428;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
+
+procs=0
+for h in ${huc_ids[@]}; do
+  # Background the process so we don't have to wait for it to finish
+  # before starting the next one.
+  f="${h}_SWAT.txt"
+  paste ${f} ${newcols} > ${T}/${f} && mv -f ${T}/${f} ${f} &
+  procs=$(( ${procs} + 1 ))
+  # Don't start too many backgrounded processes at once
+  if [[ ${procs} -eq 8 ]]; then
+    wait
+    procs=0
+  fi
+done
+
+# wait for any lingering processes to finish
+wait
+
+rm -rf ${T}
+```
+
+Run the script:
+```bash
+bash metdata_AWR_SS_SWC_FC.sh
+```
+
+This took about a minute.
+
+### MACAv2-METDATA
+
+Create a script to add the columns to the MACAv2-METDATA files:
+
+**`maca_AWR_SS_SWC_FC.sh`**
+```bash
+#!/bin/bash
+#
+# Add columns SS, SWC, and FC (with values 25, 150, and 30) to the 
+# multi-column files in AWR_Drought_Project.
+#
+
+# Skipping CCSM4 and NorESM1-M since these don't have relative humidity
+MODELS=("bcc-csm1-1-m" "bcc-csm1-1" "BNU-ESM" "CanESM2" "CNRM-CM5"
+    "CSIRO-Mk3-6-0" "GFDL-ESM2G" "GFDL-ESM2M" "HadGEM2-CC365" "HadGEM2-ES365"
+    "inmcm4" "IPSL-CM5A-LR" "IPSL-CM5A-MR" "IPSL-CM5B-LR" "MIROC-ESM-CHEM"
+    "MIROC-ESM" "MIROC5" "MRI-CGCM3")
+
+RCPS=("rcp45" "rcp85")
+
+cd /data/public/datasets/MACA/MACAv2_Derived/AWR_Drought_Project
+
+source ../huc10_ids.sh
+
+# Write temp files in RAM
+T=$(mktemp -d --tmpdir=/dev/shm)
+
+# Create appropriate length columns SS, SWC, and FC
+newcols="${T}/ss_swc_fc.txt"
+echo "" | awk 'END{str=sprintf("SS\tSWC\tFC\n");for(i=1;i<34334;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
+
+procs=0
+for model in ${MODELS[@]}; do
+  pushd ${model}
+  for h in ${huc_ids[@]}; do
+    for rcp in ${RCPS[@]}; do
+      # Background the process so we don't have to wait for it to finish
+      # before starting the next one.
+      f=${h}_${model}_${rcp}_SWAT.txt 
+      paste ${f} ${newcols} > ${T}/${f} && mv -f ${T}/${f} ${f} &
+      procs=$(( ${procs} + 1 ))
+      # Don't start too many backgrounded processes at once
+      if [[ ${procs} -eq 8 ]]; then
+        wait
+        procs=0
+      fi
+    done  # end rcp loop
+  done  # end huc_id loop
+  popd
+done  # end model loop
+
+# wait for any lingering processes to finish
+wait
+
+rm -rf ${T}
+```
+
+Run the script:
+```bash
+time bash maca_AWR_SS_SWC_FC.sh
+```
+
+This took 64 minutes.
+
 # AWR Data Outputs
 
 ## Modeled data from MACAv2-METDATA

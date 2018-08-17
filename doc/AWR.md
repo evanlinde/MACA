@@ -1677,17 +1677,17 @@ This took 1044 minutes (17.4 hours).
 
 # Additional Columns
 
-We were requested to add three columns, into all the files in the `AWR_Drought_Project` folders. The column names are SS, SWC, and FC; their values should be 25, 150, and 30 in every line.
+We were requested to add three columns, into all the files in the `AWR_Drought_Project` folders. The column names are SS, AWC, and FC; their values should be 25, 150, and 30 in every line.
 
 ### METDATA
 
 Create a script to add the columns to the METDATA files:
 
-**`metdata_AWR_SS_SWC_FC.sh`**
+**`metdata_AWR_SS_AWC_FC.sh`**
 ```bash
 #!/bin/bash
 #
-# Add columns SS, SWC, and FC (with values 25, 150, and 30) to the 
+# Add columns SS, AWC, and FC (with values 25, 150, and 30) to the 
 # multi-column files in AWR_Drought_Project.
 #
 
@@ -1698,9 +1698,9 @@ source ../huc10_ids.sh
 # Write temp files in RAM
 T=$(mktemp -d --tmpdir=/dev/shm)
 
-# Create appropriate length columns SS, SWC, and FC
-newcols="${T}/ss_swc_fc.txt"
-echo "" | awk 'END{str=sprintf("SS\tSWC\tFC\n");for(i=1;i<14428;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
+# Create appropriate length columns SS, AWC, and FC
+newcols="${T}/ss_awc_fc.txt"
+echo "" | awk 'END{str=sprintf("SS\tAWC\tFC\n");for(i=1;i<14428;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
 
 procs=0
 for h in ${huc_ids[@]}; do
@@ -1724,7 +1724,7 @@ rm -rf ${T}
 
 Run the script:
 ```bash
-bash metdata_AWR_SS_SWC_FC.sh
+bash metdata_AWR_SS_AWC_FC.sh
 ```
 
 This took about a minute.
@@ -1733,11 +1733,11 @@ This took about a minute.
 
 Create a script to add the columns to the MACAv2-METDATA files:
 
-**`maca_AWR_SS_SWC_FC.sh`**
+**`maca_AWR_SS_AWC_FC.sh`**
 ```bash
 #!/bin/bash
 #
-# Add columns SS, SWC, and FC (with values 25, 150, and 30) to the 
+# Add columns SS, AWC, and FC (with values 25, 150, and 30) to the 
 # multi-column files in AWR_Drought_Project.
 #
 
@@ -1756,9 +1756,9 @@ source ../huc10_ids.sh
 # Write temp files in RAM
 T=$(mktemp -d --tmpdir=/dev/shm)
 
-# Create appropriate length columns SS, SWC, and FC
-newcols="${T}/ss_swc_fc.txt"
-echo "" | awk 'END{str=sprintf("SS\tSWC\tFC\n");for(i=1;i<34334;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
+# Create appropriate length columns SS, AWC, and FC
+newcols="${T}/ss_awc_fc.txt"
+echo "" | awk 'END{str=sprintf("SS\tAWC\tFC\n");for(i=1;i<34334;i++){str=str""sprintf("%d\t%d\t%d\n",25,150,30)}; print str}' | sed '$d' > ${newcols}
 
 procs=0
 for model in ${MODELS[@]}; do
@@ -1788,7 +1788,7 @@ rm -rf ${T}
 
 Run the script:
 ```bash
-time bash maca_AWR_SS_SWC_FC.sh
+time bash maca_AWR_SS_AWC_FC.sh
 ```
 
 This took 64 minutes.

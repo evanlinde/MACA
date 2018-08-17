@@ -1467,13 +1467,13 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_pet.sh</code></pre>
 <p>This took 1044 minutes (17.4 hours).</p>
 <h1 id="additional-columns">Additional Columns</h1>
-<p>We were requested to add three columns, into all the files in the <code>AWR_Drought_Project</code> folders. The column names are SS, SWC, and FC; their values should be 25, 150, and 30 in every line.</p>
+<p>We were requested to add three columns, into all the files in the <code>AWR_Drought_Project</code> folders. The column names are SS, AWC, and FC; their values should be 25, 150, and 30 in every line.</p>
 <h3 id="metdata-1">METDATA</h3>
 <p>Create a script to add the columns to the METDATA files:</p>
-<p><strong><code>metdata_AWR_SS_SWC_FC.sh</code></strong></p>
+<p><strong><code>metdata_AWR_SS_AWC_FC.sh</code></strong></p>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
 <span class="co">#</span>
-<span class="co"># Add columns SS, SWC, and FC (with values 25, 150, and 30) to the </span>
+<span class="co"># Add columns SS, AWC, and FC (with values 25, 150, and 30) to the </span>
 <span class="co"># multi-column files in AWR_Drought_Project.</span>
 <span class="co">#</span>
 
@@ -1484,9 +1484,9 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 <span class="co"># Write temp files in RAM</span>
 <span class="ot">T=$(</span><span class="kw">mktemp</span> -d --tmpdir=/dev/shm<span class="ot">)</span>
 
-<span class="co"># Create appropriate length columns SS, SWC, and FC</span>
-<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_swc_fc.txt&quot;</span>
-<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tSWC\tFC\n&quot;);for(i=1;i&lt;14428;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
+<span class="co"># Create appropriate length columns SS, AWC, and FC</span>
+<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_awc_fc.txt&quot;</span>
+<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tAWC\tFC\n&quot;);for(i=1;i&lt;14428;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
 
 <span class="ot">procs=</span>0
 <span class="kw">for</span> <span class="kw">h</span> in <span class="ot">${huc_ids[@]}</span><span class="kw">;</span> <span class="kw">do</span>
@@ -1507,14 +1507,14 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 
 <span class="kw">rm</span> -rf <span class="ot">${T}</span></code></pre>
 <p>Run the script:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">bash</span> metdata_AWR_SS_SWC_FC.sh</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">bash</span> metdata_AWR_SS_AWC_FC.sh</code></pre>
 <p>This took about a minute.</p>
 <h3 id="macav2-metdata-1">MACAv2-METDATA</h3>
 <p>Create a script to add the columns to the MACAv2-METDATA files:</p>
-<p><strong><code>maca_AWR_SS_SWC_FC.sh</code></strong></p>
+<p><strong><code>maca_AWR_SS_AWC_FC.sh</code></strong></p>
 <pre class="sourceCode bash"><code class="sourceCode bash"><span class="co">#!/bin/bash</span>
 <span class="co">#</span>
-<span class="co"># Add columns SS, SWC, and FC (with values 25, 150, and 30) to the </span>
+<span class="co"># Add columns SS, AWC, and FC (with values 25, 150, and 30) to the </span>
 <span class="co"># multi-column files in AWR_Drought_Project.</span>
 <span class="co">#</span>
 
@@ -1533,9 +1533,9 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 <span class="co"># Write temp files in RAM</span>
 <span class="ot">T=$(</span><span class="kw">mktemp</span> -d --tmpdir=/dev/shm<span class="ot">)</span>
 
-<span class="co"># Create appropriate length columns SS, SWC, and FC</span>
-<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_swc_fc.txt&quot;</span>
-<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tSWC\tFC\n&quot;);for(i=1;i&lt;34334;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
+<span class="co"># Create appropriate length columns SS, AWC, and FC</span>
+<span class="ot">newcols=</span><span class="st">&quot;</span><span class="ot">${T}</span><span class="st">/ss_awc_fc.txt&quot;</span>
+<span class="kw">echo</span> <span class="st">&quot;&quot;</span> <span class="kw">|</span> <span class="kw">awk</span> <span class="st">&#39;END{str=sprintf(&quot;SS\tAWC\tFC\n&quot;);for(i=1;i&lt;34334;i++){str=str&quot;&quot;sprintf(&quot;%d\t%d\t%d\n&quot;,25,150,30)}; print str}&#39;</span> <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;$d&#39;</span> <span class="kw">&gt;</span> <span class="ot">${newcols}</span>
 
 <span class="ot">procs=</span>0
 <span class="kw">for</span> <span class="kw">model</span> in <span class="ot">${MODELS[@]}</span><span class="kw">;</span> <span class="kw">do</span>
@@ -1562,7 +1562,7 @@ maca_rcps = [<span class="st">&#39;rcp45&#39;</span>, <span class="st">&#39;rcp8
 
 <span class="kw">rm</span> -rf <span class="ot">${T}</span></code></pre>
 <p>Run the script:</p>
-<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_AWR_SS_SWC_FC.sh</code></pre>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_AWR_SS_AWC_FC.sh</code></pre>
 <p>This took 64 minutes.</p>
 <h1 id="awr-data-outputs">AWR Data Outputs</h1>
 <h2 id="modeled-data-from-macav2-metdata">Modeled data from MACAv2-METDATA</h2>

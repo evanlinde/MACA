@@ -2,7 +2,7 @@
 title: "Converting MACA Data for Envision and SWAT Models - AWR"
 author: "Evan Linde"
 institution: "Oklahoma State University"
-date: "July 26, 2018"
+date: "August 24, 2018"
 ---
 
 
@@ -1524,10 +1524,11 @@ Create the python script `pet.py` to calculate daily PET values for our multi-co
 #
 # Input files are the 9-column headerless, tab-delimited SWAT output 
 # files with columns:
-#     day_of_year, year, tmax, tmin, tmean, pr, rhsmean, srad, wind
+#     day_of_year, year, tmin, tmax, tmean, pr, rhsmean, srad, wind
 #
-# Output files are tab-delimited, have headers, and 3 new columns:
-#     pet (mm d-1), latitude (deg north), elevation (m)
+# Output files are tab-delimited, have headers, and 6 new columns:
+#     pet (mm d-1), latitude (deg north), elevation (m),
+#     SS, AWC, FC. (These last three have static values.)
 #
 # This script requires 1 or 3 command line arguments:
 #    1. dataset ("metdata" or "maca" [for MACAv2-METDATA])
@@ -1575,7 +1576,7 @@ def convert_file(latitude, elevation, input_file, output_file):
 
     df=pd.read_csv(input_file, sep='\t', header=None)
 
-    df.columns = ['year','day_of_year','tmax','tmin','tmean','pr','rhsmean','srad','wind']
+    df.columns = ['year','day_of_year','tmin','tmax','tmean','pr','rhsmean','srad','wind']
 
     lat_rad = conv.deg2rad(latitude)
     atmos_pres = pyeto.atm_pressure(elevation)
@@ -1612,8 +1613,13 @@ def convert_file(latitude, elevation, input_file, output_file):
     df['latitude'] = '%.3f' % latitude
     df['elevation'] = '%.1f' % elevation
 
+    # Also add columns SS, AWC, and FC with static values
+    df['SS'] = 25
+    df['AWC'] = 150
+    df['FC'] = 30
+
     # Reduce the dataframe to only the columns we want to save
-    df = df[['year','day_of_year','tmax','tmin','tmean','pr','rhsmean','srad','wind','pet','latitude','elevation']]
+    df = df[['year','day_of_year','tmin','tmax','tmean','pr','rhsmean','srad','wind','pet','latitude','elevation','SS','AWC','FC']]
 
     # Save to an output file
     df.to_csv(output_file, sep='\t', index=False)
@@ -1664,7 +1670,7 @@ Generate new SWAT files with PET for METDATA:
 time python pet.py metdata
 ```
 
-This took 71 minutes.
+This took 69 minutes.
 
 
 Generate new SWAT files with PET for MACAv2-METDATA:
@@ -1673,9 +1679,11 @@ Generate new SWAT files with PET for MACAv2-METDATA:
 time bash maca_pet.sh
 ```
 
-This took 1044 minutes (17.4 hours).
+This took 1061 minutes (17.68 hours).
 
 # Additional Columns
+
+(As of 2018-08-24, this section is obsolete. It was necessary to recalculate potential evapotranspiration due to a couple of column labels being switched and this step was incorporated into the PET script.)
 
 We were requested to add three columns, into all the files in the `AWR_Drought_Project` folders. The column names are SS, AWC, and FC; their values should be 25, 150, and 30 in every line.
 

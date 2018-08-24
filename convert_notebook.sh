@@ -16,7 +16,7 @@ declare -A modify_dates
 modify_dates=(
   [MACA_to_Envision_SWAT]="2017-10-19"
   [MACA_to_SWAT]="2017-11-21"
-  [AWR]="2018-07-26"
+  [AWR]="2018-08-24"
 )
 declare -A pdf
 pdf=(

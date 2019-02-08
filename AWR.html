@@ -885,6 +885,14 @@ clim_vars = {<span class="st">&#39;tasmean&#39;</span>:[<span class="st">&#39;ai
     <span class="kw">done</span>
 <span class="kw">done</span></code></pre>
 <p>This took about just under 64 minutes.</p>
+<p>2019-02-06 - Redo the solar radiation files because the units need to be <span class="math">\(\frac{MJ}{m^{2} \times day^{1}}\)</span> instead of <span class="math">\(\frac{W}{m^{2}}\)</span>.</p>
+<p>Create new script <code>zonal_means_rsds.py</code> by copying and modifying <code>zonal_means_tasmean.py</code>. Multiply the dataframe/ndarray by 0.0864 before writing to a file in order to convert the units.</p>
+<p>Create new script <code>zonal_envision_to_swat_rsds.sh</code> by copying and modifying <code>zonal_envision_to_swat_tasmean.sh</code>.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/MACAv2_Derived/
+<span class="kw">time</span> bash zonal_envision_to_swat_rsds.sh AWR</code></pre>
+<p>This took just under 150 minutes (i.e. 2.5 hours).</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash maca_swat2_AWR.sh AWR</code></pre>
+<p>This took just under 271 minutes (slightly over 4.5 hours).</p>
 <h1 id="metdata">METDATA</h1>
 <h2 id="downloading-1">Downloading</h2>
 <p>Create <code>download2.sh</code> to download complete metdata files for 2017 (since our existing files don't contain the entire year) and the partial files for 2018 (up to current date, 2017-07-02).</p>
@@ -1345,6 +1353,13 @@ clim_vars = {<span class="st">&#39;tmmean&#39;</span>:<span class="st">&#39;air_
     <span class="kw">paste</span> -d, AWR_SWAT/<span class="ot">${h}</span>/<span class="ot">${h}</span>_tmm<span class="dt">{x,n}</span>.txt <span class="kw">|</span> <span class="kw">sed</span> <span class="st">&#39;1s/,.*//;s/\r,/,/g&#39;</span> <span class="kw">&gt;</span> AWR_SWAT/<span class="ot">${h}</span>/<span class="ot">${h}</span>_temperature.txt
 <span class="kw">done</span></code></pre>
 <p>This took about 76 seconds.</p>
+<p>2019-02-06 - Redo the solar radiation files because the units need to be <span class="math">\(\frac{MJ}{m^{2} \times day^{1}}\)</span> instead of <span class="math">\(\frac{W}{m^{2}}\)</span>.</p>
+<p>Create new script <code>metdata_zonal_means_srad.py</code> by copying and modifying <code>metdata_zonal_means_tmmean.py</code>. Multiply the dataframe/ndarray by 0.0864 before writing to a file in order to convert the units.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> /data/public/datasets/MACA/METDATA_Derived/
+<span class="kw">time</span> python metdata_zonal_means_srad.py AWR_Envision AWR_SWAT</code></pre>
+<p>This took 2 minutes and 28 seconds.</p>
+<pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">time</span> bash metdata_swat2_AWR.sh AWR</code></pre>
+<p>This took 4 minutes and 41 seconds.</p>
 <h1 id="calculating-potential-evapotranspiration">Calculating Potential Evapotranspiration</h1>
 <p>The researcher working on AWR requested that we also calculate potential evapotranspiration (PET) with the FAO-56 method and suggested the <a href="https://pyeto.readthedocs.io/en/latest/"><code>PyETo</code> python library</a>.</p>
 <p>After figuring out the functions we would need to call, we found that (contrary to the documentation) the library was not in <a href="https://pypi.org/">PyPI</a> and could not be installed with <code>pip</code>. Since we had already figured out how to use <code>PyETo</code>, and did not want to figure out a different library, the solution was to download the library from its <a href="https://github.com/woodcrafty/PyETo">github repository</a>.</p>

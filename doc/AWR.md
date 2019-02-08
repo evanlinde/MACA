@@ -963,6 +963,25 @@ done
 
 This took about just under 64 minutes.
 
+2019-02-06 - Redo the solar radiation files because the units need to be $\frac{MJ}{m^{2} \times day^{1}}$ instead of $\frac{W}{m^{2}}$.
+
+Create new script `zonal_means_rsds.py` by copying and modifying `zonal_means_tasmean.py`. Multiply the dataframe/ndarray by 0.0864 before writing to a file in order to convert the units.
+
+Create new script `zonal_envision_to_swat_rsds.sh` by copying and modifying `zonal_envision_to_swat_tasmean.sh`.
+
+```bash
+cd /data/public/datasets/MACA/MACAv2_Derived/
+time bash zonal_envision_to_swat_rsds.sh AWR
+```
+
+This took just under 150 minutes (i.e. 2.5 hours).
+
+```bash
+time bash maca_swat2_AWR.sh AWR
+```
+
+This took just under 271 minutes (slightly over 4.5 hours).
+
 # METDATA
 
 ## Downloading
@@ -1530,6 +1549,23 @@ done
 ```
 
 This took about 76 seconds.
+
+2019-02-06 - Redo the solar radiation files because the units need to be $\frac{MJ}{m^{2} \times day^{1}}$ instead of $\frac{W}{m^{2}}$.
+
+Create new script `metdata_zonal_means_srad.py` by copying and modifying `metdata_zonal_means_tmmean.py`. Multiply the dataframe/ndarray by 0.0864 before writing to a file in order to convert the units.
+
+```bash
+cd /data/public/datasets/MACA/METDATA_Derived/
+time python metdata_zonal_means_srad.py AWR_Envision AWR_SWAT
+```
+
+This took 2 minutes and 28 seconds.
+
+```bash
+time bash metdata_swat2_AWR.sh AWR
+```
+
+This took 4 minutes and 41 seconds.
 
 # Calculating Potential Evapotranspiration
 

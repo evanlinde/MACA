@@ -982,6 +982,27 @@ time bash maca_swat2_AWR.sh AWR
 
 This took just under 271 minutes (slightly over 4.5 hours).
 
+2019-03-28 - Create revised precipitation file (round down precipitation values below 0.25 to zero) to compensate for area-averaged values producing too many wet days.
+
+```
+cd /data/public/datasets/MACA/MACAv2_Derived
+source huc10_ids.sh
+MODELS=("bcc-csm1-1-m" "bcc-csm1-1" "BNU-ESM" "CanESM2" "CNRM-CM5" 
+    "CSIRO-Mk3-6-0" "GFDL-ESM2G" "GFDL-ESM2M" "HadGEM2-CC365" "HadGEM2-ES365" 
+    "inmcm4" "IPSL-CM5A-LR" "IPSL-CM5A-MR" "IPSL-CM5B-LR" "MIROC-ESM-CHEM" 
+    "MIROC-ESM" "MIROC5" "MRI-CGCM3")
+RCPS=("rcp45" "rcp85")
+time for m in ${MODELS[@]}; do
+    for h in ${huc_ids[@]}; do
+        for rcp in ${RCPS[@]}; do
+            awk 'FNR==1 {print} FNR>1 {if($1 < 0.25) $1=0; printf("%.3f\n",$1)}' AWR_SWAT/${m}/${h}/${h}_pr_${rcp}.txt > AWR_SWAT/${m}/${h}/${h}_pr2_${rcp}.txt
+        done
+    done
+done
+```
+
+This took a little over 68 minutes.
+
 # METDATA
 
 ## Downloading
@@ -1566,6 +1587,18 @@ time bash metdata_swat2_AWR.sh AWR
 ```
 
 This took 4 minutes and 41 seconds.
+
+2019-03-28 - Create revised precipitation file (round down precipitation values below 0.25 to zero) to compensate for area-averaged values producing too many wet days.
+
+```
+cd /data/public/datasets/MACA/METDATA_Derived
+source huc10_ids.sh
+time for h in ${huc_ids[@]}; do
+    awk 'FNR==1 {print} FNR>1 {if($1 < 0.25) $1=0; printf("%.3f\n",$1)}' AWR_SWAT/${h}/${h}_pr.txt > AWR_SWAT/${h}/${h}_pr2.txt
+done
+```
+
+This took 1 minute and 24 seconds.
 
 # Calculating Potential Evapotranspiration
 
